@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Bash Brief — Instructor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --red:#CC0000;--red-dk:#990000;
+  --gold:#C87D00;--gold-bg:#FEF8EC;--gold-bd:#F0B429;
+  --dark:#1A1A2E;--green:#166534;--teal:#0F5264;
+  --bg:#F5F4F1;--surface:#FFFFFF;--border:#E2E0DA;--border2:#CCC9C0;
+  --text:#1A1A2E;--muted:#6B6B80;--light:#F0EEE9;
+  --i-bg:#111120;--i-surf:#1C1C38;--i-border:#2A2A4A;--i-text:#E8E6F0;--i-muted:#8888AA;
+}
+body{font-family:'Barlow',sans-serif;background:var(--i-bg);color:var(--i-text);font-size:14px;min-height:100vh;}
+
+/* TOP BAR */
+.topbar{background:#0A0A18;border-bottom:2px solid var(--red);display:flex;align-items:center;gap:1rem;padding:0 1.25rem;height:52px;position:sticky;top:0;z-index:100;}
+.logo{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:700;color:#fff;letter-spacing:.04em;}
+.logo em{color:var(--red);font-style:normal;}
+.instr-badge{background:var(--red);color:#fff;font-size:.65rem;font-weight:700;padding:.18rem .5rem;border-radius:3px;letter-spacing:.06em;text-transform:uppercase;}
+.phase-status{font-size:.75rem;color:var(--i-muted);margin-left:auto;letter-spacing:.05em;}
+.phase-dots{display:flex;gap:.35rem;align-items:center;margin-left:.5rem;}
+.pdot{width:8px;height:8px;border-radius:50%;background:#2A2A4A;transition:all .25s;}
+.pdot.done{background:var(--green);}.pdot.active{background:var(--gold-bd);transform:scale(1.4);}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 340px;min-height:calc(100vh - 52px);}
+.main-col{padding:1.1rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;}
+.right-col{border-left:1px solid var(--i-border);background:var(--i-surf);display:flex;flex-direction:column;overflow-y:auto;}
+
+/* SECTION LABELS */
+.sec-label{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--i-muted);padding:.6rem 1rem .35rem;border-bottom:1px solid var(--i-border);}
+
+/* CONTROL CARD */
+.ctrl-card{background:var(--i-surf);border:1px solid var(--i-border);border-radius:8px;overflow:hidden;}
+.ctrl-head{display:flex;align-items:center;gap:.7rem;padding:.8rem 1rem;background:#0A0A18;border-bottom:1px solid var(--i-border);}
+.ctrl-badge{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;border-radius:3px;color:#fff;flex-shrink:0;}
+.ctrl-title{font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:700;color:#fff;}
+.ctrl-timer{margin-left:auto;font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:700;color:var(--gold-bd);font-variant-numeric:tabular-nums;}
+.ctrl-timer.urgent{color:var(--red);animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.ctrl-body{padding:.85rem 1rem;}
+.prog-track{height:3px;background:var(--i-border);}
+.prog-fill{height:100%;background:var(--red);transition:width 1s linear;}
+
+/* PHASE BUTTONS */
+.phase-btn-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem;}
+.phase-btn{display:inline-flex;align-items:center;gap:.35rem;background:var(--i-surf);border:1px solid var(--i-border);color:var(--i-text);border-radius:5px;padding:.45rem .9rem;font-family:'Barlow Condensed',sans-serif;font-size:.92rem;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:all .15s;}
+.phase-btn:hover{background:#2A2A50;border-color:#4A4A80;}
+.phase-btn.primary{background:var(--red);border-color:var(--red);color:#fff;}
+.phase-btn.primary:hover{background:var(--red-dk);}
+.phase-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;}
+.phase-btn.gold:hover{opacity:.85;}
+.phase-btn.green{background:var(--green);border-color:var(--green);color:#fff;}
+.phase-btn.green:hover{opacity:.85;}
+
+/* TEAMS PANEL */
+.team-row{display:flex;align-items:center;padding:.55rem 1rem;border-bottom:1px solid var(--i-border);gap:.6rem;}
+.team-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.team-name-r{font-size:.88rem;font-weight:600;flex:1;}
+.team-scores{display:flex;gap:.28rem;}
+.tscore{font-size:.7rem;background:#161630;border:1px solid var(--i-border);border-radius:2px;padding:.1rem .28rem;font-variant-numeric:tabular-nums;color:var(--i-muted);}
+.tscore.s{background:rgba(240,180,41,.12);color:var(--gold-bd);border-color:var(--gold-bd);font-weight:600;}
+.team-total-r{font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:700;color:var(--gold-bd);min-width:28px;text-align:right;}
+.score-inputs{display:flex;gap:.25rem;}
+.si-wrap{display:flex;flex-direction:column;align-items:center;gap:.1rem;}
+.si-lbl{font-size:.58rem;color:var(--i-muted);letter-spacing:.04em;white-space:nowrap;}
+.si-inp{width:36px;background:#0A0A18;border:1px solid var(--i-border);border-radius:3px;color:var(--i-text);font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:700;padding:.2rem .22rem;text-align:center;outline:none;}
+.si-inp:focus{border-color:var(--gold-bd);}
+.si-inp[readonly]{opacity:.4;cursor:not-allowed;}
+
+/* SUBMISSION CARDS */
+.sub-card{background:#0A0A18;border:1px solid var(--i-border);border-radius:6px;margin:.45rem .85rem;overflow:hidden;}
+.sub-card-head{display:flex;align-items:center;gap:.5rem;padding:.45rem .7rem;border-bottom:1px solid var(--i-border);background:#111128;}
+.sub-team-tag{font-size:.68rem;font-weight:700;padding:.1rem .32rem;border-radius:2px;color:#fff;flex-shrink:0;}
+.sub-task-lbl{font-size:.72rem;color:var(--i-muted);flex:1;}
+.ai-badge{font-size:.65rem;font-weight:700;padding:.1rem .32rem;border-radius:2px;letter-spacing:.03em;}
+.ai-badge.scoring{background:rgba(240,180,41,.15);color:var(--gold-bd);}
+.ai-badge.done{background:rgba(22,101,52,.25);color:#4ADE80;}
+.sub-body{padding:.5rem .7rem;}
+.sub-answers{font-size:.72rem;color:var(--i-muted);line-height:1.5;margin-bottom:.4rem;max-height:52px;overflow:hidden;}
+.sub-answers.exp{max-height:none;}
+.expand-lnk{font-size:.68rem;color:var(--gold-bd);cursor:pointer;background:none;border:none;padding:0;margin-bottom:.4rem;display:block;}
+.ai-reason{font-size:.72rem;color:#9090B8;line-height:1.45;background:rgba(255,255,255,.025);border:1px solid var(--i-border);border-radius:3px;padding:.35rem .5rem;margin-bottom:.4rem;}
+.approve-row{display:flex;gap:.4rem;align-items:flex-end;flex-wrap:wrap;}
+.asel{background:#0A0A18;border:1px solid var(--i-border);border-radius:3px;color:var(--i-text);font-size:.78rem;padding:.2rem .32rem;outline:none;}
+.ok-btn{background:var(--green);color:#fff;border:none;border-radius:3px;padding:.24rem .6rem;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+.ok-btn:hover{opacity:.85;}
+.no-btn{background:var(--red);color:#fff;border:none;border-radius:3px;padding:.24rem .48rem;font-size:.75rem;font-weight:700;cursor:pointer;}
+.no-btn:hover{opacity:.85;}
+.spin-wrap{display:flex;align-items:center;gap:.45rem;padding:.5rem .7rem;font-size:.75rem;color:var(--i-muted);}
+.spinner{width:13px;height:13px;border:2px solid var(--i-border);border-top-color:var(--gold-bd);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* VOTE PANEL */
+.vote-row{display:flex;align-items:center;padding:.55rem 1rem;border-bottom:1px solid var(--i-border);gap:.6rem;}
+.vote-team-name{flex:1;font-weight:600;font-size:.88rem;}
+.vote-count-badge{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;color:var(--gold-bd);min-width:24px;text-align:center;}
+.vbar-wrap{flex:1;background:var(--i-border);border-radius:3px;height:5px;overflow:hidden;}
+.vbar{height:100%;background:var(--gold-bd);border-radius:3px;transition:width .4s;}
+.vote-pts-badge{font-size:.72rem;color:var(--gold-bd);font-weight:600;white-space:nowrap;}
+
+/* FINAL TABLE */
+.final-tbl{width:100%;border-collapse:collapse;font-size:.88rem;}
+.final-tbl th{text-align:left;font-size:.65rem;color:var(--i-muted);text-transform:uppercase;letter-spacing:.08em;padding:.3rem .6rem;border-bottom:1px solid var(--i-border);font-weight:600;}
+.final-tbl td{padding:.45rem .6rem;border-bottom:1px solid var(--i-border);}
+.fr-rank{font-weight:700;color:var(--i-muted);width:22px;}
+.fr-rank.g{color:var(--gold-bd);}
+.fr-total{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:700;color:var(--gold-bd);text-align:right;}
+
+/* CONFETTI */
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:999;}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(60px);background:var(--dark);color:#fff;border-radius:6px;padding:.55rem 1rem;font-size:.82rem;z-index:1000;transition:transform .25s;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.ok{background:var(--green);} .toast.err{background:var(--red);}
+
+.bg-green{background:var(--green);} .bg-teal{background:var(--teal);} .bg-gold{background:var(--gold);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">THE <em>BASH</em> BRIEF</div>
+  <span class="instr-badge">Instructor</span>
+  <div class="phase-status" id="phase-status">Not started</div>
+  <div class="phase-dots">
+    <div class="pdot" id="dot-0"></div>
+    <div class="pdot" id="dot-1"></div>
+    <div class="pdot" id="dot-2"></div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- ══ MAIN COLUMN ══ -->
+  <div class="main-col">
+
+    <!-- Control card -->
+    <div class="ctrl-card">
+      <div class="ctrl-head">
+        <div class="round-badge ctrl-badge bg-green" id="ctrl-badge">SETUP</div>
+        <div class="ctrl-title" id="ctrl-title">The Bash Brief</div>
+        <div class="ctrl-timer" id="ctrl-timer">—</div>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="ctrl-prog" style="width:0%"></div></div>
+      <div class="ctrl-body">
+        <div style="font-size:.82rem;color:var(--i-muted);margin-bottom:.75rem;line-height:1.6;" id="ctrl-desc">
+          Students join at: <strong style="color:var(--gold-bd);" id="student-url">—</strong><br>
+          Teams joined: <span id="teams-joined">0</span>/6
+        </div>
+        <div class="phase-btn-row" id="phase-btns">
+          <button class="phase-btn primary" onclick="startRound(0)">▶ Start Round 1 (8 min)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submissions -->
+    <div class="ctrl-card">
+      <div class="ctrl-head">
+        <div class="ctrl-title" style="font-size:1rem;">Submissions</div>
+        <div style="margin-left:auto;font-size:.75rem;color:var(--i-muted);" id="sub-count">0 pending</div>
+      </div>
+      <div id="submissions-list" style="padding:.5rem 0;">
+        <div style="padding:.75rem 1rem;font-size:.8rem;color:var(--i-muted);">No submissions yet.</div>
+      </div>
+    </div>
+
+    <!-- Final leaderboard (shown at end) -->
+    <div class="ctrl-card" id="final-card" style="display:none;">
+      <div class="ctrl-head"><div class="ctrl-title">Final Results</div></div>
+      <div style="padding:.85rem 1rem;">
+        <table class="final-tbl" id="final-tbl">
+          <thead><tr><th></th><th>Team</th><th style="text-align:center">R1</th><th style="text-align:center">R2</th><th style="text-align:center">Pitch</th><th style="text-align:center">Vote</th><th style="text-align:right">Total</th></tr></thead>
+          <tbody id="final-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ RIGHT COLUMN ══ -->
+  <div class="right-col">
+
+    <!-- Teams & scores -->
+    <div class="sec-label">Teams &amp; Scores</div>
+    <div id="teams-panel"></div>
+
+    <!-- Vote tracker (hidden until vote phase) -->
+    <div id="vote-panel" style="display:none;">
+      <div class="sec-label">Live Vote</div>
+      <div id="vote-rows"></div>
+      <div style="padding:.75rem 1rem;border-top:1px solid var(--i-border);">
+        <button class="phase-btn gold" style="width:100%;justify-content:center;" onclick="lockVote()">Lock votes &amp; reveal winner →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<canvas id="confetti"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw5vszpLL3Io8sHWEGJLxxaoKgFeXlCL92nvUnSaia7oUJfAoRXOcpwKU6pB2pkI0s8pQ/exec';
+const TEAM_COLORS = ['#166534','#0F5264','#CC0000','#7A3800','#4A1A6E','#1A3A6E'];
+
+// ══════════════════════════════════════════════════════
+// RUBRICS FOR AI SCORING
+// ══════════════════════════════════════════════════════
+const RUBRIC = {
+  r1:`You are scoring undergraduate marketing student answers for Round 1 of a social media analytics activity about UNL's Back to School Bash Instagram campaign.
+
+Dataset:
+- Post 1 (Reel, Fri Aug 22): 6,605 views, 257 interactions → ER = 3.89%, non-follower views = 1,268, follower conversion = 0.121%
+- Post 2 (Gallery, Sat Aug 23): 29,684 views, 701 interactions → ER = 2.36%, non-follower views = 17,039, follower conversion = 0.061%
+- Post 3 (Reel, Mon Aug 25): 7,245 views, 323 interactions → ER = 4.46%, non-follower views = 3,499, follower conversion = 0.110%
+
+Be generous with partial credit. Minor arithmetic errors are fine if the method is right. Return ONLY valid JSON: {"score":N,"max":M,"reasoning":"one sentence under 20 words"}`,
+
+  r2:`You are scoring undergraduate marketing student answers for Round 2 of a social media analytics activity about UNL's Back to School Bash Instagram campaign.
+
+Good answers: cite real numbers, show data reasoning for format choices, name a defensible metric, honestly identify a data gap.
+Weak answers: vague ("post more reels"), no numbers, no reasoning.
+
+Be generous with partial credit for reasonable strategic thinking even if not perfectly data-backed.
+Return ONLY valid JSON: {"score":N,"max":M,"reasoning":"one sentence under 20 words"}`
+};
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+const ROUNDS_CFG = [
+  {label:'Round 01',title:'Analyst Unlocks',  badge:'bg-green',secs:480},
+  {label:'Round 02',title:'Strategist Builds',badge:'bg-teal', secs:720},
+  {label:'Round 03',title:'Presenter Preps',  badge:'bg-gold',  secs:300},
+];
+
+let teams = Array.from({length:6}, (_,i) => ({
+  slot:i, name:`Team ${i+1}`,
+  r1:null, r2:null, pitch:null, vote:0, voteCount:0,
+}));
+
+let submissions = [];
+let currentPhase = 'setup';
+let currentRound = -1;
+let timerInt = null;
+let timerSec = 0;
+let pollInt = null;
+
+const total = t => (+(t.r1||0))+(+(t.r2||0))+(+(t.pitch||0))+(+(t.vote||0));
+
+// ══════════════════════════════════════════════════════
+// SHEET API
+// ══════════════════════════════════════════════════════
+async function post(payload) {
+  if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE')) { console.warn('No URL'); return {ok:true}; }
+  try {
+    await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    return {ok:true};
+  } catch(e) { return {ok:false}; }
+}
+
+async function get(action, extra='') {
+  if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE')) return null;
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=' + action + extra);
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // Show student URL
+  const url = window.location.href.replace('instructor.html','student.html');
+  document.getElementById('student-url').textContent = url;
+
+  renderTeamsPanel();
+  startPolling();
+});
+
+// ══════════════════════════════════════════════════════
+// POLLING
+// ══════════════════════════════════════════════════════
+function startPolling() {
+  clearInterval(pollInt);
+  pollInt = setInterval(poll, 3000);
+  poll();
+}
+
+async function poll() {
+  // Poll teams
+  const teamData = await get('teams');
+  if (teamData?.teams) {
+    Object.entries(teamData.teams).forEach(([slot, name]) => {
+      const i = parseInt(slot);
+      if (teams[i]) teams[i].name = name;
+    });
+    document.getElementById('teams-joined').textContent = Object.keys(teamData.teams).length;
+  }
+
+  // Poll submissions
+  const subData = await get('submissions');
+  if (subData?.submissions) {
+    subData.submissions.forEach(raw => {
+      const exists = submissions.find(s => s.sheetId === raw.id);
+      if (!exists) {
+        const sub = {
+          sheetId: raw.id,
+          team: raw.team, slot: raw.slot,
+          taskId: raw.taskId, maxPts: raw.maxPts,
+          answers: raw.answers,
+          roundKey: raw.taskId.startsWith('r1') ? 'r1' : 'r2',
+          aiScore: null, aiReasoning: null,
+          status: 'pending',
+        };
+        submissions.push(sub);
+        autoScore(sub);
+      }
+    });
+  }
+
+  // Poll votes
+  const voteData = await get('votes');
+  if (voteData?.votes && currentPhase === 'vote') {
+    teams.forEach(t => { t.voteCount = 0; });
+    voteData.votes.forEach(v => {
+      const t = teams[parseInt(v.slot)];
+      if (t) t.voteCount = (t.voteCount||0) + 1;
+    });
+    renderVoteRows();
+  }
+
+  renderTeamsPanel();
+  renderSubmissions();
+}
+
+// ══════════════════════════════════════════════════════
+// AI SCORING
+// ══════════════════════════════════════════════════════
+async function autoScore(sub) {
+  const rubric = RUBRIC[sub.roundKey] || RUBRIC.r1;
+  const prompt = `Task: ${sub.taskId}\nMax points: ${sub.maxPts}\nStudent answers: ${sub.answers}\n\nScore this.`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:150,
+        system:rubric,
+        messages:[{role:'user',content:prompt}],
+      }),
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const m = text.match(/\{[\s\S]*?\}/);
+    if (m) {
+      const p = JSON.parse(m[0]);
+      sub.aiScore = Math.min(sub.maxPts, Math.max(0, Math.round(p.score||0)));
+      sub.aiReasoning = p.reasoning || '';
+    } else { sub.aiScore = 0; sub.aiReasoning = 'Could not parse response.'; }
+  } catch(e) {
+    sub.aiScore = Math.round(sub.maxPts*0.5);
+    sub.aiReasoning = 'AI unavailable — defaulted to 50%.';
+  }
+  sub.status = 'ai-scored';
+  renderSubmissions();
+}
+
+// ══════════════════════════════════════════════════════
+// PHASE CONTROL
+// ══════════════════════════════════════════════════════
+async function startRound(idx) {
+  currentRound = idx;
+  currentPhase = 'round' + idx;
+  const cfg = ROUNDS_CFG[idx];
+
+  // Push phase to sheet so students follow
+  await post({ action:'setPhase', phase:'round'+idx });
+
+  document.getElementById('ctrl-badge').textContent = cfg.label;
+  document.getElementById('ctrl-badge').className = 'ctrl-badge ' + cfg.badge;
+  document.getElementById('ctrl-title').textContent = cfg.title;
+  document.getElementById('phase-status').textContent = cfg.label + ' · ' + cfg.title;
+  [0,1,2].forEach(i => {
+    document.getElementById('dot-'+i).className = 'pdot'+(i<idx?' done':i===idx?' active':'');
+  });
+
+  clearInterval(timerInt);
+  timerSec = cfg.secs;
+  renderCtrlTimer(cfg.secs);
+  document.getElementById('ctrl-prog').style.width = '0%';
+  timerInt = setInterval(() => {
+    timerSec--;
+    renderCtrlTimer(cfg.secs);
+    document.getElementById('ctrl-prog').style.width = ((cfg.secs-timerSec)/cfg.secs*100)+'%';
+    if (timerSec <= 0) clearInterval(timerInt);
+  }, 1000);
+
+  // Update phase buttons
+  const btns = document.getElementById('phase-btns');
+  btns.innerHTML = '';
+  if (idx < 2) {
+    const nb = document.createElement('button');
+    nb.className = 'phase-btn primary';
+    nb.textContent = `▶ Start Round ${idx+2} (${idx===0?'12':'5'} min)`;
+    nb.onclick = () => startRound(idx+1);
+    btns.appendChild(nb);
+  }
+  const pitchBtn = document.createElement('button');
+  pitchBtn.className = 'phase-btn gold';
+  pitchBtn.textContent = '🎤 Go to Pitches';
+  pitchBtn.onclick = startPitch;
+  btns.appendChild(pitchBtn);
+
+  document.getElementById('ctrl-desc').innerHTML = `Round in progress. Students are working on their tasks.<br>Submissions appear below as teams submit.`;
+}
+
+function renderCtrlTimer(total) {
+  const el = document.getElementById('ctrl-timer');
+  if (!el) return;
+  const m = Math.floor(Math.max(0,timerSec)/60);
+  const s = Math.max(0,timerSec)%60;
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  el.className = 'ctrl-timer'+(timerSec<=30&&timerSec>0?' urgent':'');
+}
+
+async function startPitch() {
+  clearInterval(timerInt);
+  currentPhase = 'pitch';
+  await post({action:'setPhase', phase:'pitch'});
+  document.getElementById('ctrl-badge').textContent = 'PITCHES';
+  document.getElementById('ctrl-badge').className = 'ctrl-badge bg-red' ;
+  document.getElementById('ctrl-badge').style.background = '#CC0000';
+  document.getElementById('ctrl-title').textContent = 'Pitch Time — 2 min per team';
+  document.getElementById('ctrl-timer').textContent = '2:00';
+  document.getElementById('phase-status').textContent = 'Pitch Time';
+  document.getElementById('ctrl-prog').style.width = '0%';
+
+  // Pitch timer per team
+  let pitchSec = 120;
+  clearInterval(timerInt);
+  timerSec = 120;
+  timerInt = setInterval(() => {
+    timerSec--;
+    const m = Math.floor(Math.max(0,timerSec)/60);
+    const s = Math.max(0,timerSec)%60;
+    const el = document.getElementById('ctrl-timer');
+    if(el) { el.textContent=`${m}:${s.toString().padStart(2,'0')}`; el.className='ctrl-timer'+(timerSec<=20&&timerSec>0?' urgent':''); }
+    document.getElementById('ctrl-prog').style.width = ((120-timerSec)/120*100)+'%';
+    if(timerSec<=0) clearInterval(timerInt);
+  }, 1000);
+
+  const btns = document.getElementById('phase-btns');
+  btns.innerHTML = `
+    <button class="phase-btn" onclick="resetPitchTimer()">↺ Reset 2:00</button>
+    <button class="phase-btn gold" onclick="startVote()">→ Start Vote</button>`;
+  document.getElementById('ctrl-desc').innerHTML = 'Click "Reset 2:00" between each team pitch. Enter pitch clarity scores (0–5) in the team panel on the right.';
+}
+
+function resetPitchTimer() {
+  clearInterval(timerInt);
+  timerSec = 120;
+  timerInt = setInterval(() => {
+    timerSec--;
+    const m = Math.floor(Math.max(0,timerSec)/60);
+    const s = Math.max(0,timerSec)%60;
+    const el = document.getElementById('ctrl-timer');
+    if(el) { el.textContent=`${m}:${s.toString().padStart(2,'0')}`; el.className='ctrl-timer'+(timerSec<=20&&timerSec>0?' urgent':''); }
+    document.getElementById('ctrl-prog').style.width = ((120-timerSec)/120*100)+'%';
+    if(timerSec<=0) clearInterval(timerInt);
+  }, 1000);
+}
+
+async function startVote() {
+  clearInterval(timerInt);
+  currentPhase = 'vote';
+  await post({action:'setPhase', phase:'vote'});
+  document.getElementById('ctrl-badge').textContent = 'VOTE';
+  document.getElementById('ctrl-title').textContent = 'Class Vote';
+  document.getElementById('ctrl-timer').textContent = '—';
+  document.getElementById('phase-status').textContent = 'Class Vote';
+  document.getElementById('vote-panel').style.display = 'block';
+  document.getElementById('ctrl-desc').innerHTML = 'Students are voting on their phones. Watch the live tally. Click "Lock votes" when done.';
+  document.getElementById('phase-btns').innerHTML = '';
+  renderVoteRows();
+}
+
+function lockVote() {
+  const totalVotes = teams.reduce((s,t) => s+t.voteCount, 0);
+  if (totalVotes > 0) {
+    teams.forEach(t => { t.vote = parseFloat((t.voteCount/totalVotes*5).toFixed(1)); });
+  }
+  teams.forEach(t => { if(t.r1===null)t.r1=0; if(t.r2===null)t.r2=0; if(t.pitch===null)t.pitch=0; });
+  showFinal();
+}
+
+// ══════════════════════════════════════════════════════
+// TEAMS PANEL
+// ══════════════════════════════════════════════════════
+function renderTeamsPanel() {
+  const panel = document.getElementById('teams-panel');
+  panel.innerHTML = '';
+  teams.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'team-row';
+    row.innerHTML = `
+      <div class="team-color-dot" style="background:${TEAM_COLORS[i]}"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="team-name-r">${t.name}</div>
+        <div class="team-scores">
+          <span class="tscore${t.r1!==null?' s':''}">R1:${t.r1??'—'}</span>
+          <span class="tscore${t.r2!==null?' s':''}">R2:${t.r2??'—'}</span>
+          <span class="tscore${t.pitch!==null?' s':''}">P:${t.pitch??'—'}</span>
+          <span class="tscore${t.vote>0?' s':''}">V:${t.vote||'—'}</span>
+        </div>
+      </div>
+      <div class="score-inputs">
+        <div class="si-wrap"><span class="si-lbl">R1/10</span><input class="si-inp" type="number" min="0" max="10" value="${t.r1??''}" placeholder="—" onchange="setScore(${i},'r1',this.value)" /></div>
+        <div class="si-wrap"><span class="si-lbl">R2/10</span><input class="si-inp" type="number" min="0" max="10" value="${t.r2??''}" placeholder="—" onchange="setScore(${i},'r2',this.value)" /></div>
+        <div class="si-wrap"><span class="si-lbl">Pitch/5</span><input class="si-inp" type="number" min="0" max="5" value="${t.pitch??''}" placeholder="—" onchange="setScore(${i},'pitch',this.value)" /></div>
+        <div class="si-wrap"><span class="si-lbl">Vote</span><input class="si-inp" value="${t.vote.toFixed(1)}" readonly /></div>
+      </div>
+      <div class="team-total-r">${total(t)}</div>`;
+    panel.appendChild(row);
+  });
+
+  // Push scores to sheet so student scoreboard can show them
+  post({ action:'setScores', scores: teams.map(t=>({slot:t.slot,r1:t.r1,r2:t.r2,pitch:t.pitch,vote:t.vote})) });
+}
+
+function setScore(i, key, val) {
+  const max = key==='pitch'?5:10;
+  teams[i][key] = Math.min(max, Math.max(0, parseFloat(val)||0));
+  renderTeamsPanel();
+}
+
+// ══════════════════════════════════════════════════════
+// SUBMISSIONS
+// ══════════════════════════════════════════════════════
+function renderSubmissions() {
+  const pending = submissions.filter(s => s.status!=='approved'&&s.status!=='rejected');
+  const approved = submissions.filter(s => s.status==='approved');
+  document.getElementById('sub-count').textContent = `${pending.length} pending`;
+
+  const list = document.getElementById('submissions-list');
+  list.innerHTML = '';
+
+  if (submissions.length === 0) {
+    list.innerHTML = '<div style="padding:.75rem 1rem;font-size:.8rem;color:var(--i-muted);">No submissions yet.</div>';
+    return;
+  }
+
+  pending.forEach(sub => {
+    const card = document.createElement('div');
+    card.className = 'sub-card';
+    const idx = submissions.indexOf(sub);
+    const teamOpts = teams.map((t,i) => `<option value="${i}"${t.name===sub.team||t.slot===sub.slot?'selected':''}>${t.name}</option>`).join('');
+    const maxOpts = Array.from({length:sub.maxPts+1},(_,v)=>`<option value="${v}"${v===sub.aiScore?' selected':''}>${v}</option>`).join('');
+
+    if (sub.status==='pending') {
+      card.innerHTML = `
+        <div class="sub-card-head">
+          <span class="sub-team-tag" style="background:${TEAM_COLORS[sub.slot??0]}">${sub.team}</span>
+          <span class="sub-task-lbl">Task ${(sub.taskId||'').toUpperCase()} · ${sub.maxPts} pts</span>
+          <span class="ai-badge scoring">Scoring…</span>
+        </div>
+        <div class="spin-wrap"><div class="spinner"></div>AI evaluating…</div>`;
+    } else {
+      card.innerHTML = `
+        <div class="sub-card-head">
+          <span class="sub-team-tag" style="background:${TEAM_COLORS[sub.slot??0]}">${sub.team}</span>
+          <span class="sub-task-lbl">Task ${(sub.taskId||'').toUpperCase()} · ${sub.maxPts} pts max</span>
+          <span class="ai-badge done">AI: ${sub.aiScore}/${sub.maxPts}</span>
+        </div>
+        <div class="sub-body">
+          <div class="sub-answers" id="sa-${idx}">${sub.answers}</div>
+          <button class="expand-lnk" onclick="toggleExp('sa-${idx}')">Show all ▼</button>
+          <div class="ai-reason">${sub.aiReasoning}</div>
+          <div class="approve-row">
+            <div style="display:flex;flex-direction:column;gap:.12rem;flex:1;min-width:70px;">
+              <span style="font-size:.58rem;color:var(--i-muted);letter-spacing:.05em;">TEAM</span>
+              <select class="asel" id="tsel-${idx}">${teamOpts}</select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:.12rem;">
+              <span style="font-size:.58rem;color:var(--i-muted);letter-spacing:.05em;">SCORE</span>
+              <select class="asel" style="width:55px;" id="ssel-${idx}">${maxOpts}</select>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:.25rem;">
+              <button class="ok-btn" onclick="approveSub(${idx})">✓ Approve</button>
+              <button class="no-btn" onclick="rejectSub(${idx})">✕</button>
+            </div>
+          </div>
+        </div>`;
+    }
+    list.appendChild(card);
+  });
+
+  if (approved.length > 0) {
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#4ADE80;padding:.5rem 1rem .25rem;';
+    hdr.textContent = `Approved (${approved.length})`;
+    list.appendChild(hdr);
+    approved.forEach(sub => {
+      const d = document.createElement('div');
+      d.style.cssText = 'padding:.35rem 1rem;font-size:.73rem;color:var(--i-muted);border-bottom:1px solid var(--i-border);display:flex;justify-content:space-between;';
+      d.innerHTML = `<span>${sub.team} · ${(sub.taskId||'').toUpperCase()}</span><span style="color:#4ADE80;font-weight:600;">+${sub.finalScore} pts</span>`;
+      list.appendChild(d);
+    });
+  }
+}
+
+function toggleExp(id) {
+  const el=document.getElementById(id); if(!el)return;
+  el.classList.toggle('exp');
+  const btn=el.nextElementSibling; if(btn) btn.textContent=el.classList.contains('exp')?'Hide ▲':'Show all ▼';
+}
+
+function approveSub(idx) {
+  const sub = submissions[idx];
+  const score = parseInt(document.getElementById('ssel-'+idx)?.value)||0;
+  const teamIdx = parseInt(document.getElementById('tsel-'+idx)?.value)||0;
+  sub.finalScore = score; sub.approvedTeam = teamIdx; sub.status = 'approved';
+  const key = sub.roundKey;
+  teams[teamIdx][key] = (+(teams[teamIdx][key]||0)) + score;
+  post({ action:'setScore', slot:teamIdx, key, value:teams[teamIdx][key] });
+  toast(`+${score} pts → ${teams[teamIdx].name}`, 'ok');
+  renderTeamsPanel(); renderSubmissions();
+}
+
+function rejectSub(idx) {
+  submissions[idx].status = 'rejected';
+  post({ action:'rejectSub', sheetId:submissions[idx].sheetId });
+  toast('Sent back', 'err');
+  renderSubmissions();
+}
+
+// ══════════════════════════════════════════════════════
+// VOTE
+// ══════════════════════════════════════════════════════
+function renderVoteRows() {
+  const totalVotes = teams.reduce((s,t)=>s+t.voteCount,0);
+  const maxV = Math.max(1,...teams.map(t=>t.voteCount));
+  const rows = document.getElementById('vote-rows');
+  rows.innerHTML = '';
+  const sorted = [...teams].sort((a,b)=>b.voteCount-a.voteCount);
+  sorted.forEach(t => {
+    const pct = totalVotes>0?(t.voteCount/totalVotes*100).toFixed(0):0;
+    const pts = totalVotes>0?(t.voteCount/totalVotes*5).toFixed(1):0;
+    const row = document.createElement('div');
+    row.className = 'vote-row';
+    row.innerHTML = `
+      <div class="team-color-dot" style="background:${TEAM_COLORS[t.slot]}"></div>
+      <div class="vote-team-name">${t.name}</div>
+      <div class="vote-count-badge">${t.voteCount}</div>
+      <div class="vbar-wrap"><div class="vbar" style="width:${t.voteCount/maxV*100}%"></div></div>
+      <div class="vote-pts-badge">${pts}pts</div>`;
+    rows.appendChild(row);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// FINAL
+// ══════════════════════════════════════════════════════
+function showFinal() {
+  document.getElementById('final-card').style.display = 'block';
+  document.getElementById('ctrl-badge').textContent = 'RESULTS';
+  document.getElementById('ctrl-title').textContent = 'Final Results';
+  document.getElementById('ctrl-timer').textContent = '—';
+  document.getElementById('phase-status').textContent = 'Complete';
+  document.getElementById('ctrl-desc').innerHTML = 'Activity complete. Use the debrief questions to bridge into the platform slides.';
+  document.getElementById('phase-btns').innerHTML = '';
+
+  const sorted = [...teams].sort((a,b)=>total(b)-total(a));
+  const tbody = document.getElementById('final-tbody');
+  tbody.innerHTML = '';
+  sorted.forEach((t,rank) => {
+    const tr = document.createElement('tr');
+    if(rank===0) tr.style.background='rgba(240,180,41,.07)';
+    tr.innerHTML = `
+      <td class="fr-rank${rank===0?' g':''}">${rank===0?'★':rank+1}</td>
+      <td style="font-weight:${rank===0?'700':'400'}">${t.name}</td>
+      <td style="text-align:center;color:var(--i-muted)">${t.r1||0}</td>
+      <td style="text-align:center;color:var(--i-muted)">${t.r2||0}</td>
+      <td style="text-align:center;color:var(--i-muted)">${t.pitch||0}</td>
+      <td style="text-align:center;${t.vote>0?'color:var(--gold-bd);font-weight:600':'color:var(--i-muted)'}">${t.vote||0}</td>
+      <td class="fr-total">${total(t)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  fireConfetti();
+}
+
+// ══════════════════════════════════════════════════════
+// CONFETTI
+// ══════════════════════════════════════════════════════
+function fireConfetti() {
+  const c=document.getElementById('confetti');
+  c.width=window.innerWidth; c.height=window.innerHeight;
+  const ctx=c.getContext('2d');
+  const cols=['#CC0000','#C87D00','#F0B429','#166534','#1A1A2E'];
+  const pts=Array.from({length:160},()=>({x:Math.random()*c.width,y:-10,vx:(Math.random()-.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,rv:(Math.random()-.5)*7,w:Math.random()*9+4,h:Math.random()*4+3,col:cols[Math.floor(Math.random()*cols.length)],life:1}));
+  function draw(){ctx.clearRect(0,0,c.width,c.height);let alive=false;pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.rv;p.vy+=.09;p.life-=.004;if(p.y<c.height&&p.life>0){alive=true;ctx.save();ctx.globalAlpha=p.life;ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.col;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();}});if(alive)requestAnimationFrame(draw);else ctx.clearRect(0,0,c.width,c.height);}
+  draw();
+}
+
+// ══════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════
+let toastT=null;
+function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(type?' '+type:'');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
+</script>
+</body>
+</html>

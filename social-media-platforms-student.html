@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>The Bash Brief</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --red: #CC0000; --red-dk: #990000;
+  --gold: #C87D00; --gold-bg: #FEF8EC; --gold-bd: #F0B429;
+  --dark: #1A1A2E; --green: #166534; --teal: #0F5264;
+  --bg: #F5F4F1; --surface: #FFFFFF;
+  --border: #E2E0DA; --border2: #CCC9C0;
+  --text: #1A1A2E; --muted: #6B6B80; --light: #F0EEE9;
+}
+body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; min-height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar { background: var(--dark); display: flex; align-items: center; gap: .75rem; padding: 0 1rem; height: 48px; position: sticky; top: 0; z-index: 100; }
+.topbar-logo { font-family: 'Barlow Condensed', sans-serif; font-size: 1.15rem; font-weight: 700; color: #fff; letter-spacing: .04em; }
+.topbar-logo em { color: var(--red); font-style: normal; }
+.team-tag { background: var(--red); color: #fff; font-size: .7rem; font-weight: 700; padding: .18rem .5rem; border-radius: 3px; letter-spacing: .05em; margin-left: auto; }
+.round-chip { font-size: .72rem; color: #8888AA; letter-spacing: .06em; text-transform: uppercase; }
+
+/* ── PROGRESS ── */
+.prog-track { height: 3px; background: #E8E6E1; }
+.prog-fill { height: 100%; background: var(--red); transition: width 1s linear; }
+
+/* ── ROUND HEADER ── */
+.round-header { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .75rem; padding: .85rem 1rem; }
+.round-badge { font-family: 'Barlow Condensed', sans-serif; font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .2rem .5rem; border-radius: 3px; color: #fff; flex-shrink: 0; }
+.bg-green { background: var(--green); } .bg-teal { background: var(--teal); } .bg-gold { background: var(--gold); }
+.round-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.3rem; font-weight: 700; }
+.round-timer { margin-left: auto; font-family: 'Barlow Condensed', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+.round-timer.urgent { color: var(--red); animation: pulse .8s infinite; }
+@keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+
+/* ── PAGE BODY ── */
+.page-body { padding: 1rem; display: flex; flex-direction: column; gap: .85rem; max-width: 680px; margin: 0 auto; }
+
+/* ── SCREEN MANAGEMENT ── */
+.screen { display: none; }
+.screen.active { display: block; }
+#screen-claim.active { display: flex; min-height: 100vh; background: var(--bg); align-items: center; justify-content: center; padding: 2rem 1rem; }
+
+/* ── CLAIM SCREEN ── */
+.claim-inner { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; }
+.claim-logo { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(3rem, 12vw, 5.5rem); font-weight: 900; line-height: .88; color: var(--dark); text-align: center; margin-bottom: 1.5rem; }
+.claim-logo em { color: var(--red); font-style: normal; display: block; }
+.claim-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.4rem; width: 100%; }
+.claim-card h2 { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; color: var(--gold); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .35rem; }
+.claim-card p { font-size: .82rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.5; }
+.team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: 1rem; }
+.team-btn { border: 2px solid var(--border); background: var(--surface); border-radius: 8px; padding: .75rem .5rem; cursor: pointer; text-align: center; transition: all .15s; font-family: 'Barlow', sans-serif; }
+.team-btn:hover { border-color: var(--gold-bd); background: var(--gold-bg); }
+.team-btn.selected { border-color: var(--gold-bd); background: var(--gold-bg); }
+.team-btn .tb-num { font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 700; display: block; }
+.team-btn .tb-name { font-size: .75rem; color: var(--muted); display: block; margin-top: .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team-btn.taken { opacity: .45; cursor: not-allowed; background: var(--light); }
+.name-row { display: flex; gap: .5rem; margin-bottom: .85rem; }
+.name-inp { flex: 1; background: var(--bg); border: 1px solid var(--border2); border-radius: 5px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: .9rem; padding: .45rem .7rem; outline: none; transition: border-color .2s; }
+.name-inp:focus { border-color: var(--gold-bd); background: #fff; }
+.join-btn { background: var(--red); color: #fff; border: none; border-radius: 5px; padding: .45rem .9rem; font-family: 'Barlow Condensed', sans-serif; font-size: .95rem; font-weight: 700; cursor: pointer; transition: background .15s; white-space: nowrap; }
+.join-btn:hover { background: var(--red-dk); }
+.join-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+/* ── DATA PANEL ── */
+.data-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.dp-head { display: flex; align-items: center; justify-content: space-between; padding: .6rem .9rem; background: var(--dark); cursor: pointer; user-select: none; }
+.dp-head span { font-family: 'Barlow Condensed', sans-serif; font-size: .78rem; font-weight: 700; color: #fff; letter-spacing: .1em; text-transform: uppercase; }
+.dp-chev { color: #8888AA; font-size: .85rem; transition: transform .2s; }
+.dp-chev.open { transform: rotate(180deg); }
+.dp-body { padding: .75rem; }
+.dtable { width: 100%; border-collapse: collapse; font-size: .78rem; }
+.dtable th { background: var(--dark); color: #fff; padding: .4rem .5rem; text-align: center; font-weight: 600; font-size: .7rem; }
+.dtable th:first-child { text-align: left; }
+.dtable td { padding: .35rem .5rem; border-bottom: 1px solid var(--border); text-align: center; }
+.dtable td:first-child { text-align: left; color: var(--muted); font-weight: 600; font-size: .72rem; }
+.dtable tr:nth-child(even) td { background: var(--light); }
+.dtable .hi { background: #FEF9EC; color: #92600A; font-weight: 700; }
+.dtable .tot td { background: var(--dark); color: #fff; font-weight: 700; border: none; }
+.formula-strip { margin-top: .6rem; background: var(--gold-bg); border-left: 3px solid var(--gold-bd); border-radius: 0 4px 4px 0; padding: .5rem .7rem; font-size: .76rem; color: #92600A; display: flex; flex-direction: column; gap: .2rem; }
+.formula-strip strong { font-weight: 700; margin-right: .3rem; }
+
+/* ── TASK CARDS ── */
+.task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.task-head { display: flex; align-items: center; gap: .6rem; padding: .65rem .9rem; background: var(--light); border-bottom: 1px solid var(--border); }
+.pts-badge { font-size: .68rem; font-weight: 700; background: var(--red); color: #fff; padding: .13rem .38rem; border-radius: 3px; flex-shrink: 0; }
+.task-q { font-size: .88rem; font-weight: 600; flex: 1; line-height: 1.4; }
+.task-body { padding: .7rem .9rem; }
+.why-box { background: var(--gold-bg); border-left: 3px solid var(--gold-bd); border-radius: 0 4px 4px 0; padding: .45rem .65rem; font-size: .78rem; color: #92600A; margin-bottom: .6rem; line-height: 1.5; }
+.why-label { font-weight: 700; margin-right: .22rem; }
+.fml { background: var(--light); border: 1px solid var(--border); border-radius: 4px; padding: .32rem .55rem; font-size: .76rem; color: var(--muted); margin-bottom: .55rem; }
+.fml strong { color: var(--gold); margin-right: .25rem; }
+.ans-area { display: flex; flex-direction: column; gap: .38rem; }
+.ans-row { display: flex; gap: .45rem; align-items: flex-start; }
+.ans-label { font-size: .74rem; color: var(--muted); min-width: 90px; padding-top: .48rem; font-weight: 500; flex-shrink: 0; }
+.ans-input { flex: 1; background: var(--bg); border: 1px solid var(--border2); border-radius: 4px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: .85rem; padding: .4rem .55rem; outline: none; transition: border-color .2s; }
+.ans-input:focus { border-color: var(--gold-bd); background: #fff; }
+textarea.ans-input { resize: vertical; min-height: 52px; }
+.sub-btn { display: flex; align-items: center; justify-content: center; gap: .4rem; width: 100%; background: var(--red); color: #fff; border: none; border-radius: 5px; padding: .6rem 1rem; font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; letter-spacing: .04em; cursor: pointer; transition: background .15s; margin-top: .6rem; }
+.sub-btn:hover { background: var(--red-dk); }
+.sub-btn:disabled { background: var(--muted); cursor: not-allowed; }
+.sub-status { font-size: .78rem; margin-top: .45rem; display: flex; align-items: center; gap: .4rem; color: var(--muted); }
+.sub-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-bd); animation: blink 1.2s infinite; flex-shrink: 0; }
+@keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:.15; } }
+.sub-confirmed { color: var(--green); font-weight: 600; }
+
+/* ── DEBRIEF MODAL ── */
+.modal-wrap { background: rgba(26,26,46,.7); position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+.modal-card { background: var(--surface); border-radius: 12px; border: 2px solid var(--gold-bd); max-width: 500px; width: 100%; overflow: hidden; animation: pop .3s ease-out; }
+@keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal-hdr { background: var(--dark); padding: 1rem 1.2rem .85rem; display: flex; align-items: center; gap: .7rem; }
+.modal-badge { font-family: 'Barlow Condensed', sans-serif; font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: var(--gold-bd); color: var(--dark); padding: .18rem .5rem; border-radius: 3px; }
+.modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.25rem; font-weight: 700; color: #fff; }
+.modal-body { padding: 1.1rem 1.2rem; }
+.modal-q { background: var(--gold-bg); border-left: 3px solid var(--gold-bd); border-radius: 0 5px 5px 0; padding: .7rem .9rem; font-size: .92rem; line-height: 1.6; color: var(--text); margin-bottom: .85rem; }
+.modal-q strong { color: var(--gold); display: block; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .3rem; }
+.modal-note { font-size: .8rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.55; }
+.modal-note em { color: var(--text); font-style: normal; font-weight: 600; }
+.modal-btn { width: 100%; background: var(--red); color: #fff; border: none; border-radius: 6px; padding: .65rem 1rem; font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background .15s; }
+.modal-btn:hover { background: var(--red-dk); }
+
+/* ── WAITING / PITCH / VOTE ── */
+.waiting-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2rem 1.5rem; text-align: center; }
+.waiting-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+.waiting-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; }
+.waiting-sub { font-size: .88rem; color: var(--muted); line-height: 1.55; }
+.vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: .75rem; }
+.vote-btn { background: var(--surface); border: 2px solid var(--border); border-radius: 10px; padding: 1rem .75rem; text-align: center; cursor: pointer; transition: all .15s; font-family: 'Barlow', sans-serif; }
+.vote-btn:hover { border-color: var(--gold-bd); background: var(--gold-bg); transform: translateY(-2px); }
+.vote-btn.voted { border-color: var(--gold-bd); background: var(--gold-bg); cursor: default; }
+.vote-btn.own-team { opacity: .4; cursor: not-allowed; }
+.vote-name { font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 700; display: block; }
+.vote-note { font-size: .72rem; color: var(--muted); display: block; margin-top: .2rem; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--dark); color: #fff; border-radius: 6px; padding: .55rem 1rem; font-size: .82rem; z-index: 1000; transition: transform .25s; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.ok { background: var(--green); }
+.toast.err { background: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- ══ CLAIM SCREEN ══ -->
+<div id="screen-claim" class="screen active">
+  <div class="claim-inner">
+    <div class="claim-logo">THE<em>BASH</em>BRIEF</div>
+    <div class="claim-card">
+      <h2>Join your team</h2>
+      <p>Select your team number, enter a name for your group, and tap Join.</p>
+      <div class="team-grid" id="team-grid"></div>
+      <div class="name-row">
+        <input class="name-inp" id="group-name-inp" placeholder="Your group name…" maxlength="30" />
+        <button class="join-btn" onclick="joinTeam()" id="join-btn">Join →</button>
+      </div>
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.5;">
+        MRKT 441 · Social Media Platforms · Back to School Bash
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GAME SCREEN ══ -->
+<div id="screen-game" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo">THE <em>BASH</em> BRIEF</div>
+    <div class="round-chip" id="s-round-chip"></div>
+    <div class="team-tag" id="s-team-tag">Team ?</div>
+  </div>
+  <div class="prog-track"><div class="prog-fill" id="s-prog" style="width:0%"></div></div>
+  <div class="round-header">
+    <div class="round-badge" id="s-round-badge">Round 01</div>
+    <div class="round-title" id="s-round-title">Analyst Unlocks</div>
+    <div class="round-timer" id="s-timer">8:00</div>
+  </div>
+  <div class="page-body" id="s-page-body"></div>
+</div>
+
+<!-- ══ WAITING SCREEN ══ -->
+<div id="screen-waiting" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo">THE <em>BASH</em> BRIEF</div>
+    <div class="team-tag" id="w-team-tag">Team ?</div>
+  </div>
+  <div class="page-body">
+    <div class="waiting-card" id="waiting-card">
+      <div class="waiting-icon" id="waiting-icon">⏳</div>
+      <div class="waiting-title" id="waiting-title">Stand by</div>
+      <div class="waiting-sub" id="waiting-sub">Your instructor is starting the next round.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PITCH SCREEN ══ -->
+<div id="screen-pitch" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo">THE <em>BASH</em> BRIEF</div>
+    <div class="team-tag" id="p-team-tag">Team ?</div>
+  </div>
+  <div class="page-body">
+    <div class="waiting-card">
+      <div class="waiting-icon">🎤</div>
+      <div class="waiting-title">Pitch Time</div>
+      <div class="waiting-sub" style="margin-bottom:1rem;">Listen carefully. Each team has 2 minutes. Note one thing you agree with and one thing you'd push back on.</div>
+      <div style="background:var(--gold-bg);border-left:3px solid var(--gold-bd);border-radius:0 5px 5px 0;padding:.65rem .9rem;font-size:.85rem;color:#92600A;text-align:left;line-height:1.6;">
+        <strong style="display:block;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.25rem;">Judge on:</strong>
+        📊 Did they use real numbers? &nbsp;·&nbsp; 🎯 Specific format + schedule? &nbsp;·&nbsp; 💬 Could they explain the reasoning?
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VOTE SCREEN ══ -->
+<div id="screen-vote" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo">THE <em>BASH</em> BRIEF</div>
+    <div class="team-tag" id="v-team-tag">Team ?</div>
+  </div>
+  <div class="page-body">
+    <div class="task-card">
+      <div class="task-head">
+        <span class="task-q">Class Vote — most convincing strategy</span>
+      </div>
+      <div class="task-body">
+        <div class="why-box"><span class="why-label">Rule:</span>You cannot vote for your own team. 5 points split proportionally by vote share.</div>
+        <div class="vote-grid" id="vote-grid"></div>
+        <div id="voted-msg" style="display:none;margin-top:.75rem;font-size:.85rem;color:var(--green);font-weight:600;text-align:center;">✓ Vote submitted</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DEBRIEF MODAL ══ -->
+<div class="modal-wrap" id="debrief-modal" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-hdr">
+      <span class="modal-badge" id="db-badge">After Round 1</span>
+      <span class="modal-title">Before you move on</span>
+    </div>
+    <div class="modal-body">
+      <div class="modal-q"><strong>Discuss with your group — 2 min</strong><span id="db-q"></span></div>
+      <div class="modal-note" id="db-note"></div>
+      <button class="modal-btn" onclick="closeDebrief()">Our group discussed — continue →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG — paste your Apps Script URL here
+// ══════════════════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw5vszpLL3Io8sHWEGJLxxaoKgFeXlCL92nvUnSaia7oUJfAoRXOcpwKU6pB2pkI0s8pQ/exec';
+
+// ══════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════
+const POST_DATA = [
+  {label:'Total Views',               p1:'6,605',         p2:'29,684 ★',      p3:'7,245',        hi:[0,1,0]},
+  {label:'Followers / Non-followers', p1:'34.8% / 19.2%', p2:'42.6% / 57.4%', p3:'51.7% / 48.3%',hi:[0,0,0]},
+  {label:'New Followers',             p1:'8',             p2:'18 ★',          p3:'8',            hi:[0,1,0]},
+  {label:'Likes',                     p1:'240',           p2:'612',           p3:'298',          hi:[0,0,0]},
+  {label:'Shares',                    p1:'12',            p2:'74',            p3:'20',           hi:[0,0,0]},
+  {label:'Saves',                     p1:'5',             p2:'9',             p3:'3',            hi:[0,0,0]},
+  {label:'Comments',                  p1:'0',             p2:'2',             p3:'0',            hi:[0,0,0]},
+  {label:'TOTAL INTERACTIONS',        p1:'257',           p2:'701',           p3:'323',          tot:true},
+];
+
+const TASKS = [
+  // Round 1 — 8 min
+  [
+    {id:'r1a',pts:3,q:'Calculate the Engagement Rate for all 3 posts.',why:"Views tell you how many people saw a post. Engagement rate tells you how many actually responded — the fairer comparison.",formula:'Engagement Rate = Total Interactions ÷ Total Views × 100',fields:['Post 1 ER (%)','Post 2 ER (%)','Post 3 ER (%)']},
+    {id:'r1b',pts:3,q:'Calculate the actual non-follower view count for each post.',why:'57% of 300 is very different from 57% of 30,000. The raw number shows the real scale of new audience reached.',formula:'Non-follower Views = Total Views × Non-follower %',fields:['Post 1 (views)','Post 2 (views)','Post 3 (views)']},
+    {id:'r1c',pts:2,q:'Which post converted viewers to new followers most efficiently?',why:"Follower growth is a long-term asset. A higher conversion rate means more strategic work per view.",formula:'Follower Conversion Rate = New Followers ÷ Total Views × 100',fields:['Post 1 rate (%)','Post 2 rate (%)','Post 3 rate (%)','Winner']},
+    {id:'r1d',pts:2,q:'One sentence: what does the data say at a glance?',why:"Your director won't always want a spreadsheet — they want the headline.",fields:['Summary'],big:true},
+  ],
+  // Round 2 — 12 min
+  [
+    {id:'r2a',pts:4,q:'Interpret: Which post best reached new audiences? What does Reels vs. gallery data suggest? Were zero comments a problem?',why:"Marketers don't just report numbers — they explain what they mean.",fields:['Best reach post + number','Format insight','Zero comments — problem?']},
+    {id:'r2b',pts:4,q:'Decide: Content format + posting time for each of 3 posts next year. Which post to boost with paid spend?',why:"A specific format, time, and reason is a recommendation. Vague plans don't get approved.",fields:['Post 1 format + time','Post 2 format + time','Post 3 format + time','Boost pick + why']},
+    {id:'r2c',pts:2,q:'Justify: One metric to report as proof the campaign worked. One thing this data does not show.',why:"Choosing the right metric — and explaining why — shows you understand what the campaign was trying to do.",fields:['Metric + reason','Data gap']},
+  ],
+  // Round 3 — presenter prep — 5 min
+  [
+    {id:'r3a',pts:0,q:'Presenter: build your 2-minute pitch.',why:"Data doesn't sell itself. Communicating findings clearly and confidently is one of the most valued skills in marketing.",fields:['0–15s Hook — what surprised you most?','15–45s Insight — best post + your engagement rate','45–90s Strategy — 3 formats, schedule, key metric','90–120s Gap — one thing you need to know'],big:true},
+  ],
+];
+
+const ROUNDS_CFG = [
+  {label:'Round 01',title:'Analyst Unlocks',  badge:'bg-green', secs:480},
+  {label:'Round 02',title:'Strategist Builds',badge:'bg-teal',  secs:720},
+  {label:'Round 03',title:'Presenter Preps',  badge:'bg-gold',  secs:300},
+];
+
+const DEBRIEFS = [
+  {
+    badge:'After Round 1',
+    q:'Post 1 has the highest engagement rate (3.89%) but Post 2 has far more total views (29,684). If you were reporting to your director, which number do you lead with — and why?',
+    note:"There's no single right answer. Push each other — if someone says views, ask why. If someone says engagement rate, ask what that tells you about the audience.",
+    next:'Round 2',nextIdx:1,
+  },
+  {
+    badge:'After Round 2',
+    q:'What is the single biggest assumption your strategy makes — and what would happen to your recommendation if that assumption turned out to be wrong?',
+    note:"Every strategy has a weak point. Knowing yours makes your pitch stronger. A group that can name their assumption will sound far more credible than one that pretends the strategy is bulletproof.",
+    next:'Round 3',nextIdx:2,
+  },
+];
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let myTeam = null;    // { slot: 0-5, name: 'Team Name' }
+let currentPhase = 'claim';  // claim | round | debrief | pitch | vote | done
+let currentRound = 0;
+let timerInt = null;
+let timerSec = 480;
+let debriefCallback = null;
+let takenSlots = {};   // populated by polling
+let hasVoted = false;
+
+// ══════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ══════════════════════════════════════════════════════
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════════════
+// SEND TO GOOGLE SHEETS
+// ══════════════════════════════════════════════════════
+async function sendToSheet(payload) {
+  if (!SCRIPT_URL || SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
+    console.warn('No script URL configured — data not saved');
+    return { ok: true };
+  }
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return { ok: true };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+async function getFromSheet(action) {
+  if (!SCRIPT_URL || SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') return null;
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=' + action);
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+// ══════════════════════════════════════════════════════
+// CLAIM SCREEN
+// ══════════════════════════════════════════════════════
+const TEAM_COLORS = ['#166534','#0F5264','#CC0000','#7A3800','#4A1A6E','#1A3A6E'];
+
+async function loadTeamGrid() {
+  // Poll for taken slots
+  const data = await getFromSheet('teams');
+  takenSlots = data?.teams || {};
+  renderTeamGrid();
+}
+
+function renderTeamGrid() {
+  const grid = document.getElementById('team-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const btn = document.createElement('button');
+    const taken = takenSlots[i] && takenSlots[i] !== (myTeam?.slot === i ? myTeam.name : '');
+    btn.className = 'team-btn' + (taken ? ' taken' : '') + (myTeam?.slot === i ? ' selected' : '');
+    btn.style.borderColor = myTeam?.slot === i ? TEAM_COLORS[i] : '';
+    btn.innerHTML = `<span class="tb-num" style="color:${TEAM_COLORS[i]}">Team ${i+1}</span>
+      <span class="tb-name">${takenSlots[i] || 'Available'}</span>`;
+    if (!taken) btn.onclick = () => selectSlot(i);
+    grid.appendChild(btn);
+  }
+}
+
+let selectedSlot = null;
+function selectSlot(i) {
+  selectedSlot = i;
+  renderTeamGrid();
+  document.querySelectorAll('.team-btn').forEach((b,idx) => {
+    b.classList.toggle('selected', idx === i);
+    if (idx === i) b.style.borderColor = TEAM_COLORS[i];
+    else if (!b.classList.contains('taken')) b.style.borderColor = '';
+  });
+  document.getElementById('group-name-inp').focus();
+}
+
+async function joinTeam() {
+  if (selectedSlot === null) { toast('Pick a team number first', 'err'); return; }
+  const name = document.getElementById('group-name-inp').value.trim();
+  if (!name) { toast('Enter your group name', 'err'); return; }
+
+  const btn = document.getElementById('join-btn');
+  btn.disabled = true; btn.textContent = 'Joining…';
+
+  myTeam = { slot: selectedSlot, name };
+
+  await sendToSheet({ action: 'claim', slot: selectedSlot, name });
+
+  // Check what phase the game is in
+  const state = await getFromSheet('state');
+  const phase = state?.phase || 'waiting';
+
+  document.getElementById('s-team-tag').textContent = name;
+  document.getElementById('w-team-tag').textContent = name;
+  document.getElementById('p-team-tag').textContent = name;
+  document.getElementById('v-team-tag').textContent = name;
+
+  if (phase === 'round0') { goTo('screen-game'); loadRound(0); }
+  else if (phase === 'round1') { goTo('screen-game'); loadRound(1); }
+  else if (phase === 'round2') { goTo('screen-game'); loadRound(2); }
+  else if (phase === 'pitch') { goTo('screen-pitch'); }
+  else if (phase === 'vote') { goTo('screen-vote'); renderVoteButtons(); }
+  else {
+    // Game hasn't started yet — show a friendly "you're in" state on the claim screen
+    showJoinedState(selectedSlot, name);
+    startPhasePolling();
+  }
+}
+
+function showJoinedState(slot, name) {
+  currentPhase = 'joined';
+  const colors = ['#166534','#0F5264','#CC0000','#7A3800','#4A1A6E','#1A3A6E'];
+  const card = document.querySelector('.claim-card');
+  card.innerHTML = `
+    <div style="text-align:center;padding:.5rem 0 1rem;">
+      <div style="font-size:2.5rem;margin-bottom:.6rem;">✅</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:700;color:${colors[slot]};margin-bottom:.25rem;">Team ${slot+1}</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:var(--dark);margin-bottom:.75rem;">${name}</div>
+      <div style="background:var(--light);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;font-size:.88rem;color:var(--muted);line-height:1.6;">
+        <strong style="color:var(--text);">You're in!</strong> Keep this screen open.<br>
+        The game will start automatically when your instructor hits Start.
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// PHASE POLLING
+// ══════════════════════════════════════════════════════
+let phasePolling = null;
+function startPhasePolling() {
+  clearInterval(phasePolling);
+  phasePolling = setInterval(async () => {
+    const state = await getFromSheet('state');
+    if (!state) return;
+    handlePhaseChange(state.phase, state);
+  }, 3000);
+}
+
+function handlePhaseChange(phase, state) {
+  if (phase === 'round0' && currentPhase !== 'round0') { currentPhase='round0'; goTo('screen-game'); loadRound(0); }
+  else if (phase === 'round1' && currentPhase !== 'round1') { currentPhase='round1'; goTo('screen-game'); loadRound(1); }
+  else if (phase === 'round2' && currentPhase !== 'round2') { currentPhase='round2'; goTo('screen-game'); loadRound(2); }
+  else if (phase === 'pitch' && currentPhase !== 'pitch') { currentPhase='pitch'; clearInterval(timerInt); goTo('screen-pitch'); }
+  else if (phase === 'vote' && currentPhase !== 'vote') { currentPhase='vote'; clearInterval(timerInt); goTo('screen-vote'); renderVoteButtons(); }
+  // If still in waiting/claim state and game starts, transition from joined state
+  else if ((phase||'').startsWith('round') && (currentPhase === 'claim' || currentPhase === 'joined')) {
+    const idx = parseInt(phase.replace('round',''));
+    currentPhase = phase; goTo('screen-game'); loadRound(idx);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// ROUND
+// ══════════════════════════════════════════════════════
+function loadRound(idx) {
+  currentRound = idx;
+  currentPhase = 'round' + idx;
+  clearInterval(phasePolling);
+  startPhasePolling();
+
+  const cfg = ROUNDS_CFG[idx];
+  document.getElementById('s-round-badge').textContent = cfg.label;
+  document.getElementById('s-round-badge').className = 'round-badge ' + cfg.badge;
+  document.getElementById('s-round-title').textContent = cfg.title;
+  document.getElementById('s-round-chip').textContent = cfg.label;
+
+  clearInterval(timerInt);
+  timerSec = cfg.secs;
+  renderTimer('s-timer', cfg.secs);
+  document.getElementById('s-prog').style.width = '0%';
+  timerInt = setInterval(() => {
+    timerSec--;
+    renderTimer('s-timer', cfg.secs);
+    document.getElementById('s-prog').style.width = ((cfg.secs - timerSec) / cfg.secs * 100) + '%';
+    if (timerSec <= 0) { clearInterval(timerInt); }
+  }, 1000);
+
+  const body = document.getElementById('s-page-body');
+  body.innerHTML = '';
+  body.appendChild(buildDataPanel());
+  if (idx === 2) {
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:8px;padding:.85rem 1rem;font-size:.87rem;line-height:1.6;';
+    box.innerHTML = '<strong style="color:var(--gold);">Presenter:</strong> Build your pitch using the template. Analyst and Strategist — help prep the numbers and the reasoning.';
+    body.appendChild(box);
+  }
+  TASKS[idx].forEach(task => body.appendChild(buildTaskCard(task)));
+}
+
+function renderTimer(id, total) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const m = Math.floor(Math.max(0, timerSec) / 60);
+  const s = Math.max(0, timerSec) % 60;
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  el.className = 'round-timer' + (timerSec <= 30 && timerSec > 0 ? ' urgent' : '');
+}
+
+// ══════════════════════════════════════════════════════
+// DATA PANEL
+// ══════════════════════════════════════════════════════
+function buildDataPanel() {
+  const wrap = document.createElement('div');
+  wrap.className = 'data-panel';
+  wrap.innerHTML = `
+    <div class="dp-head" onclick="toggleDP(this)">
+      <span>📊 The Data — Back to School Bash</span>
+      <span class="dp-chev open">▲</span>
+    </div>
+    <div class="dp-body" id="dpbody">
+      <table class="dtable">
+        <thead><tr>
+          <th>Metric</th>
+          <th>Post 1 · Reel<br><small style="font-weight:400;opacity:.65">Fri Aug 22</small></th>
+          <th>Post 2 · Gallery<br><small style="font-weight:400;opacity:.65">Sat Aug 23</small></th>
+          <th>Post 3 · Reel<br><small style="font-weight:400;opacity:.65">Mon Aug 25</small></th>
+        </tr></thead>
+        <tbody>${POST_DATA.map(r => `<tr${r.tot?' class="tot"':''}><td>${r.label}</td><td${r.hi&&r.hi[0]?' class="hi"':''}>${r.p1}</td><td${r.hi&&r.hi[1]?' class="hi"':''}>${r.p2}</td><td${r.hi&&r.hi[2]?' class="hi"':''}>${r.p3}</td></tr>`).join('')}</tbody>
+      </table>
+      <div class="formula-strip">
+        <div><strong>Engagement Rate</strong>= Interactions ÷ Views × 100</div>
+        <div><strong>Non-follower Views</strong>= Total Views × Non-follower %</div>
+        <div><strong>Follower Conversion</strong>= New Followers ÷ Total Views × 100</div>
+      </div>
+    </div>`;
+  return wrap;
+}
+
+function toggleDP(head) {
+  const body = document.getElementById('dpbody');
+  const ch = head.querySelector('.dp-chev');
+  const open = ch.classList.contains('open');
+  body.style.display = open ? 'none' : 'block';
+  ch.classList.toggle('open', !open);
+  ch.textContent = open ? '▼' : '▲';
+}
+
+// ══════════════════════════════════════════════════════
+// TASK CARDS
+// ══════════════════════════════════════════════════════
+function buildTaskCard(task) {
+  const card = document.createElement('div');
+  card.className = 'task-card';
+  card.id = 'task-' + task.id;
+  let h = `<div class="task-head">`;
+  if (task.pts) h += `<span class="pts-badge">${task.pts} pts</span>`;
+  h += `<span class="task-q">${task.q}</span></div>`;
+  let b = `<div class="task-body">`;
+  if (task.why) b += `<div class="why-box"><span class="why-label">Why this matters:</span>${task.why}</div>`;
+  if (task.formula) b += `<div class="fml"><strong>Formula:</strong> ${task.formula}</div>`;
+  b += `<div class="ans-area">`;
+  task.fields.forEach((lbl, i) => {
+    const long = task.big || ['?','insight','why','Why','Hook','Insight','Strategy','Gap','Summary','reason','gap','not','problem'].some(k => lbl.includes(k));
+    b += `<div class="ans-row"><span class="ans-label">${lbl}</span>`;
+    b += long ? `<textarea class="ans-input" id="a-${task.id}-${i}" rows="2" placeholder="Your answer…"></textarea>`
+               : `<input class="ans-input" id="a-${task.id}-${i}" placeholder="…" />`;
+    b += `</div>`;
+  });
+  b += `</div>`;
+  if (task.pts) {
+    b += `<button class="sub-btn" id="sub-${task.id}" onclick="submitTask('${task.id}',${task.pts})">Submit answers</button>`;
+    b += `<div class="sub-status" id="sts-${task.id}" style="display:none;"><span class="sub-dot"></span><span id="sts-txt-${task.id}">Submitted — waiting for instructor score</span></div>`;
+  }
+  b += `</div>`;
+  card.innerHTML = h + b;
+  return card;
+}
+
+// ══════════════════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════════════════
+async function submitTask(taskId, maxPts) {
+  const answers = [];
+  let i = 0;
+  while (document.getElementById(`a-${taskId}-${i}`)) {
+    answers.push(document.getElementById(`a-${taskId}-${i}`).value.trim());
+    i++;
+  }
+  if (answers.every(a => !a)) { toast('Fill in at least one answer first', 'err'); return; }
+
+  const btn = document.getElementById('sub-' + taskId);
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const res = await sendToSheet({
+    action: 'submit',
+    team: myTeam?.name || 'Unknown',
+    slot: myTeam?.slot ?? -1,
+    taskId, maxPts,
+    answers: answers.join(' | '),
+    timestamp: new Date().toISOString(),
+  });
+
+  btn.textContent = '✓ Submitted';
+  const sts = document.getElementById('sts-' + taskId);
+  if (sts) sts.style.display = 'flex';
+  toast('Submitted!', 'ok');
+}
+
+// ══════════════════════════════════════════════════════
+// DEBRIEF
+// ══════════════════════════════════════════════════════
+function showDebrief(idx) {
+  const d = DEBRIEFS[idx];
+  document.getElementById('db-badge').textContent = d.badge;
+  document.getElementById('db-q').textContent = d.q;
+  document.getElementById('db-note').innerHTML = d.note;
+  debriefCallback = () => loadRound(d.nextIdx);
+  document.getElementById('debrief-modal').style.display = 'flex';
+}
+
+function closeDebrief() {
+  document.getElementById('debrief-modal').style.display = 'none';
+  if (debriefCallback) { debriefCallback(); debriefCallback = null; }
+}
+
+// ══════════════════════════════════════════════════════
+// VOTE
+// ══════════════════════════════════════════════════════
+async function renderVoteButtons() {
+  const data = await getFromSheet('teams');
+  const teams = data?.teams || {};
+  const grid = document.getElementById('vote-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const name = teams[i] || `Team ${i+1}`;
+    const isOwn = myTeam?.slot === i;
+    const btn = document.createElement('button');
+    btn.className = 'vote-btn' + (isOwn ? ' own-team' : '');
+    btn.innerHTML = `<span class="vote-name">${name}</span><span class="vote-note">${isOwn ? 'Your team' : 'Tap to vote'}</span>`;
+    if (!isOwn && !hasVoted) {
+      btn.onclick = async () => {
+        if (hasVoted) return;
+        hasVoted = true;
+        document.querySelectorAll('.vote-btn').forEach(b => { b.onclick = null; b.classList.add(b === btn ? 'voted' : ''); });
+        document.getElementById('voted-msg').style.display = 'block';
+        await sendToSheet({ action: 'vote', slot: i, name, voterSlot: myTeam?.slot });
+        toast('Vote submitted!', 'ok');
+      };
+    }
+    grid.appendChild(btn);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════
+let toastT = null;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show' + (type?' '+type:'');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  renderTeamGrid();
+  loadTeamGrid();
+  // Refresh team grid every 5s so taken slots show up
+  setInterval(loadTeamGrid, 5000);
+});
+</script>
+</body>
+</html>
