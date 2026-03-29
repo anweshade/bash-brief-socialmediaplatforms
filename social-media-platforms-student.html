@@ -337,7 +337,7 @@ function goTo(id) {
 // SEND TO GOOGLE SHEETS
 // ══════════════════════════════════════════════════════
 async function sendToSheet(payload) {
-  if (!SCRIPT_URL || SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
+  if (!SCRIPT_URL || SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbw5vszpLL3Io8sHWEGJLxxaoKgFeXlCL92nvUnSaia7oUJfAoRXOcpwKU6pB2pkI0s8pQ/exec') {
     console.warn('No script URL configured — data not saved');
     return { ok: true };
   }
@@ -355,7 +355,7 @@ async function sendToSheet(payload) {
 }
 
 async function getFromSheet(action) {
-  if (!SCRIPT_URL || SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') return null;
+  if (!SCRIPT_URL || SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbw5vszpLL3Io8sHWEGJLxxaoKgFeXlCL92nvUnSaia7oUJfAoRXOcpwKU6pB2pkI0s8pQ/exec') return null;
   try {
     const res = await fetch(SCRIPT_URL + '?action=' + action);
     return await res.json();
