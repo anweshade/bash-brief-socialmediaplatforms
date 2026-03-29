@@ -255,7 +255,7 @@ textarea.ans-input { resize: vertical; min-height: 52px; }
 // ══════════════════════════════════════════════════════
 // CONFIG — paste your Apps Script URL here
 // ══════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw5vszpLL3Io8sHWEGJLxxaoKgFeXlCL92nvUnSaia7oUJfAoRXOcpwKU6pB2pkI0s8pQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhIIst1CMBHmKIOeIFq9-YOj4tpM0rjt5i5sLVBTQTTffv4g5vPe1rqLLGIuuY86W4hQ/exec';
 
 // ══════════════════════════════════════════════════════
 // DATA
@@ -337,7 +337,7 @@ function goTo(id) {
 // SEND TO GOOGLE SHEETS
 // ══════════════════════════════════════════════════════
 async function sendToSheet(payload) {
-  if (!SCRIPT_URL || SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbw5vszpLL3Io8sHWEGJLxxaoKgFeXlCL92nvUnSaia7oUJfAoRXOcpwKU6pB2pkI0s8pQ/exec') {
+  if (!SCRIPT_URL || SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbwhIIst1CMBHmKIOeIFq9-YOj4tpM0rjt5i5sLVBTQTTffv4g5vPe1rqLLGIuuY86W4hQ/exec') {
     console.warn('No script URL configured — data not saved');
     return { ok: true };
   }
@@ -355,11 +355,18 @@ async function sendToSheet(payload) {
 }
 
 async function getFromSheet(action) {
-  if (!SCRIPT_URL || SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbw5vszpLL3Io8sHWEGJLxxaoKgFeXlCL92nvUnSaia7oUJfAoRXOcpwKU6pB2pkI0s8pQ/exec') return null;
+  if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE_YOUR')) return null;
   try {
-    const res = await fetch(SCRIPT_URL + '?action=' + action);
+    const res = await fetch(SCRIPT_URL + '?action=' + action, {
+      method: 'GET',
+      mode: 'cors',
+    });
+    if (!res.ok) return null;
     return await res.json();
-  } catch(e) { return null; }
+  } catch(e) {
+    console.warn('getFromSheet failed:', action, e.message);
+    return null;
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -422,16 +429,20 @@ async function joinTeam() {
   document.getElementById('p-team-tag').textContent = name;
   document.getElementById('v-team-tag').textContent = name;
 
-  if (phase === 'round0') { goTo('screen-game'); loadRound(0); }
-  else if (phase === 'round1') { goTo('screen-game'); loadRound(1); }
-  else if (phase === 'round2') { goTo('screen-game'); loadRound(2); }
-  else if (phase === 'pitch') { goTo('screen-pitch'); }
-  else if (phase === 'vote') { goTo('screen-vote'); renderVoteButtons(); }
-  else {
-    // Game hasn't started yet — show a friendly "you're in" state on the claim screen
-    showJoinedState(selectedSlot, name);
-    startPhasePolling();
-  }
+  applyPhase(phase);
+  // Always poll — handles both "already started" and "waiting to start"
+  startPhasePolling();
+}
+
+function applyPhase(phase) {
+  if (!phase || phase === 'waiting') {
+    showJoinedState(myTeam.slot, myTeam.name);
+    currentPhase = 'joined';
+  } else if (phase === 'round0') { currentPhase='round0'; goTo('screen-game'); loadRound(0); }
+  else if (phase === 'round1') { currentPhase='round1'; goTo('screen-game'); loadRound(1); }
+  else if (phase === 'round2') { currentPhase='round2'; goTo('screen-game'); loadRound(2); }
+  else if (phase === 'pitch')  { currentPhase='pitch';  goTo('screen-pitch'); }
+  else if (phase === 'vote')   { currentPhase='vote';   goTo('screen-vote'); renderVoteButtons(); }
 }
 
 function showJoinedState(slot, name) {
@@ -464,16 +475,9 @@ function startPhasePolling() {
 }
 
 function handlePhaseChange(phase, state) {
-  if (phase === 'round0' && currentPhase !== 'round0') { currentPhase='round0'; goTo('screen-game'); loadRound(0); }
-  else if (phase === 'round1' && currentPhase !== 'round1') { currentPhase='round1'; goTo('screen-game'); loadRound(1); }
-  else if (phase === 'round2' && currentPhase !== 'round2') { currentPhase='round2'; goTo('screen-game'); loadRound(2); }
-  else if (phase === 'pitch' && currentPhase !== 'pitch') { currentPhase='pitch'; clearInterval(timerInt); goTo('screen-pitch'); }
-  else if (phase === 'vote' && currentPhase !== 'vote') { currentPhase='vote'; clearInterval(timerInt); goTo('screen-vote'); renderVoteButtons(); }
-  // If still in waiting/claim state and game starts, transition from joined state
-  else if ((phase||'').startsWith('round') && (currentPhase === 'claim' || currentPhase === 'joined')) {
-    const idx = parseInt(phase.replace('round',''));
-    currentPhase = phase; goTo('screen-game'); loadRound(idx);
-  }
+  if (!phase || phase === currentPhase) return;
+  clearInterval(timerInt);
+  applyPhase(phase);
 }
 
 // ══════════════════════════════════════════════════════
