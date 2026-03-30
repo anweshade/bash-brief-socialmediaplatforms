@@ -255,7 +255,7 @@ textarea.ans-input { resize: vertical; min-height: 52px; }
 // ══════════════════════════════════════════════════════
 // CONFIG — paste your Apps Script URL here
 // ══════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqRkAmn2TOkmX1roMBkx_4qYHkpCNhL5n6ZoNIhO4FTPR1AyEQKrQJxiYNNTPvC0oW2Q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybSi0XHFrS_t2Nc799_A8-8_W4398ooPciUPDWdPhOa3v0zF0olZuN_gPmZCu0kPA2lA/exec';
 
 // ══════════════════════════════════════════════════════
 // DATA
@@ -337,7 +337,7 @@ function goTo(id) {
 // SEND TO GOOGLE SHEETS
 // ══════════════════════════════════════════════════════
 async function sendToSheet(payload) {
-  if (!SCRIPT_URL || SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbxqRkAmn2TOkmX1roMBkx_4qYHkpCNhL5n6ZoNIhO4FTPR1AyEQKrQJxiYNNTPvC0oW2Q/exec') {
+  if (!SCRIPT_URL || SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbybSi0XHFrS_t2Nc799_A8-8_W4398ooPciUPDWdPhOa3v0zF0olZuN_gPmZCu0kPA2lA/exec') {
     console.warn('No script URL configured — data not saved');
     return { ok: true };
   }

@@ -211,7 +211,7 @@ body{font-family:'Barlow',sans-serif;background:var(--i-bg);color:var(--i-text);
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqRkAmn2TOkmX1roMBkx_4qYHkpCNhL5n6ZoNIhO4FTPR1AyEQKrQJxiYNNTPvC0oW2Q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybSi0XHFrS_t2Nc799_A8-8_W4398ooPciUPDWdPhOa3v0zF0olZuN_gPmZCu0kPA2lA/exec';
 const TEAM_COLORS = ['#166534','#0F5264','#CC0000','#7A3800','#4A1A6E','#1A3A6E'];
 
 // ══════════════════════════════════════════════════════
@@ -354,11 +354,12 @@ async function poll() {
 // AI SCORING
 // ══════════════════════════════════════════════════════
 async function autoScore(sub) {
-  // Ask Apps Script to score via its server-side access
-  const data = await get('score&taskId=' + encodeURIComponent(sub.taskId)
+  // Use extra param to pass scoring params — get() appends them before &callback=
+  const extra = '&taskId=' + encodeURIComponent(sub.taskId)
     + '&maxPts=' + sub.maxPts
-    + '&roundKey=' + sub.roundKey
-    + '&answers=' + encodeURIComponent(sub.answers));
+    + '&roundKey=' + encodeURIComponent(sub.roundKey)
+    + '&answers=' + encodeURIComponent(sub.answers);
+  const data = await get('score', extra);
   if (data && data.score !== undefined) {
     sub.aiScore = Math.min(sub.maxPts, Math.max(0, Math.round(data.score)));
     sub.aiReasoning = data.reasoning || '';
@@ -558,7 +559,7 @@ function renderSubmissions() {
     const card = document.createElement('div');
     card.className = 'sub-card';
     const idx = submissions.indexOf(sub);
-    const teamOpts = teams.map((t,i) => `<option value="${i}"${t.name===sub.team||t.slot===sub.slot?'selected':''}>${t.name}</option>`).join('');
+    const teamOpts = teams.map((t,i) => `<option value="${i}"${t.name===sub.team||t.slot==sub.slot?'selected':''}>${t.name}</option>`).join('');
     const maxOpts = Array.from({length:sub.maxPts+1},(_,v)=>`<option value="${v}"${v===sub.aiScore?' selected':''}>${v}</option>`).join('');
 
     if (sub.status==='pending') {
@@ -568,7 +569,7 @@ function renderSubmissions() {
           <span class="sub-task-lbl">Task ${(sub.taskId||'').toUpperCase()} · ${sub.maxPts} pts</span>
           <span class="ai-badge scoring">Scoring…</span>
         </div>
-        <div class="spin-wrap"><div class="spinner"></div>AI evaluating…</div>`;
+        <div class="spin-wrap"><div class="spinner"></div>Evaluating answers…</div>`;
     } else {
       card.innerHTML = `
         <div class="sub-card-head">
