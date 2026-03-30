@@ -82,7 +82,7 @@ body{font-family:'Barlow',sans-serif;background:var(--i-bg);color:var(--i-text);
 .ai-badge.scoring{background:rgba(240,180,41,.15);color:var(--gold-bd);}
 .ai-badge.done{background:rgba(22,101,52,.25);color:#4ADE80;}
 .sub-body{padding:.5rem .7rem;}
-.sub-answers{font-size:.72rem;color:var(--i-muted);line-height:1.5;margin-bottom:.4rem;max-height:52px;overflow:hidden;}
+.sub-answers{font-size:.72rem;color:var(--i-muted);line-height:1.5;margin-bottom:.4rem;max-height:52px;overflow:hidden;}.sub-answers.hidden{display:none;}.ai-reason.hidden{display:none;}.expand-lnk.hidden{display:none;}
 .sub-answers.exp{max-height:none;}
 .expand-lnk{font-size:.68rem;color:var(--gold-bd);cursor:pointer;background:none;border:none;padding:0;margin-bottom:.4rem;display:block;}
 .ai-reason{font-size:.72rem;color:#9090B8;line-height:1.45;background:rgba(255,255,255,.025);border:1px solid var(--i-border);border-radius:3px;padding:.35rem .5rem;margin-bottom:.4rem;}
@@ -165,7 +165,10 @@ body{font-family:'Barlow',sans-serif;background:var(--i-bg);color:var(--i-text);
     <div class="ctrl-card">
       <div class="ctrl-head">
         <div class="ctrl-title" style="font-size:1rem;">Submissions</div>
-        <div style="margin-left:auto;font-size:.75rem;color:var(--i-muted);" id="sub-count">0 pending</div>
+        <div style="display:flex;gap:.5rem;align-items:center;margin-left:auto;">
+          <button onclick="toggleAnswerVisibility()" id="ans-vis-btn" style="background:var(--i-surf);border:1px solid var(--i-border);color:var(--i-muted);border-radius:3px;padding:.18rem .5rem;font-size:.72rem;cursor:pointer;">👁 Show answers</button>
+          <span style="font-size:.75rem;color:var(--i-muted);" id="sub-count">0 pending</span>
+        </div>
       </div>
       <div id="submissions-list" style="padding:.5rem 0;">
         <div style="padding:.75rem 1rem;font-size:.8rem;color:var(--i-muted);">No submissions yet.</div>
@@ -274,10 +277,20 @@ function get(action, extra='') {
   return new Promise((resolve) => {
     const cb = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const script = document.createElement('script');
-    const timeout = setTimeout(() => { delete window[cb]; script.remove(); resolve(null); }, 8000);
-    window[cb] = (data) => { clearTimeout(timeout); delete window[cb]; script.remove(); resolve(data); };
-    script.src = SCRIPT_URL + '?action=' + action + extra + '&callback=' + cb;
-    script.onerror = () => { clearTimeout(timeout); delete window[cb]; script.remove(); resolve(null); };
+    const url = SCRIPT_URL + '?action=' + action + (extra||'') + '&callback=' + cb;
+    const timeout = setTimeout(() => {
+      console.warn('[poll timeout]', action, url);
+      delete window[cb]; script.remove(); resolve(null);
+    }, 8000);
+    window[cb] = (data) => {
+      console.log('[poll ok]', action, data);
+      clearTimeout(timeout); delete window[cb]; script.remove(); resolve(data);
+    };
+    script.src = url;
+    script.onerror = (e) => {
+      console.error('[poll error]', action, e);
+      clearTimeout(timeout); delete window[cb]; script.remove(); resolve(null);
+    };
     document.head.appendChild(script);
   });
 }
@@ -578,9 +591,9 @@ function renderSubmissions() {
           <span class="ai-badge done">AI: ${sub.aiScore}/${sub.maxPts}</span>
         </div>
         <div class="sub-body">
-          <div class="sub-answers" id="sa-${idx}">${sub.answers}</div>
-          <button class="expand-lnk" onclick="toggleExp('sa-${idx}')">Show all ▼</button>
-          <div class="ai-reason">${sub.aiReasoning}</div>
+          <div class="sub-answers${answersVisible?'':' hidden'}" id="sa-${idx}">${sub.answers}</div>
+          <button class="expand-lnk${answersVisible?'':' hidden'}" onclick="toggleExp('sa-${idx}')">Show all ▼</button>
+          <div class="ai-reason${answersVisible?'':' hidden'}">${sub.aiReasoning}</div>
           <div class="approve-row">
             <div style="display:flex;flex-direction:column;gap:.12rem;flex:1;min-width:70px;">
               <span style="font-size:.58rem;color:var(--i-muted);letter-spacing:.05em;">TEAM</span>
@@ -737,6 +750,19 @@ async function resetGame() {
   renderTeamsPanel();
   renderSubmissions();
   toast('Reset complete — ready for new class', 'ok');
+}
+
+// ══════════════════════════════════════════════════════
+// ANSWER VISIBILITY TOGGLE
+// ══════════════════════════════════════════════════════
+let answersVisible = false;
+function toggleAnswerVisibility() {
+  answersVisible = !answersVisible;
+  const btn = document.getElementById('ans-vis-btn');
+  if (btn) btn.textContent = answersVisible ? '🙈 Hide answers' : '👁 Show answers';
+  document.querySelectorAll('.sub-answers, .ai-reason, .expand-lnk').forEach(el => {
+    el.classList.toggle('hidden', !answersVisible);
+  });
 }
 
 // ══════════════════════════════════════════════════════
