@@ -673,14 +673,14 @@ function renderVoteRows() {
     const pts = totalVotes>0?(t.voteCount/totalVotes*5).toFixed(1):0;
     const row = document.createElement('div');
     row.className = 'vote-row';
-    row.style.cssText = 'display:flex;align-items:center;padding:.5rem 1rem;border-bottom:1px solid var(--i-border);gap:.5rem;';
+    row.style.cssText = 'display:flex;align-items:center;padding:.6rem 1rem;border-bottom:1px solid var(--i-border);gap:.6rem;';
     row.innerHTML = `
-      <div class="team-color-dot" style="background:${TEAM_COLORS[t.slot]};width:10px;height:10px;border-radius:50%;flex-shrink:0;"></div>
-      <div class="vote-team-name" style="flex:1;font-size:.85rem;font-weight:600;">${t.name}</div>
-      <button onclick="addManualVote(${t.slot},-1)" style="background:#2A2A4A;border:none;color:var(--i-muted);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:.9rem;line-height:1;">−</button>
-      <div class="vote-count-badge" style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:700;color:var(--gold-bd);min-width:24px;text-align:center;">${t.voteCount}</div>
-      <button onclick="addManualVote(${t.slot},1)" style="background:#2A2A4A;border:none;color:var(--gold-bd);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:.9rem;line-height:1;">+</button>
-      <div style="font-size:.72rem;color:var(--gold-bd);font-weight:600;min-width:36px;text-align:right;">${pts}pts</div>`;
+      <div style="background:${TEAM_COLORS[t.slot]};width:10px;height:10px;border-radius:50%;flex-shrink:0;"></div>
+      <div style="flex:1;font-size:.85rem;font-weight:600;color:var(--i-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.name}</div>
+      <button onclick="addManualVote(${t.slot},-1)" style="background:#333355;border:1px solid #444466;color:#fff;width:26px;height:26px;border-radius:4px;cursor:pointer;font-size:1rem;font-weight:700;flex-shrink:0;">−</button>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;color:var(--gold-bd);min-width:30px;text-align:center;">${t.voteCount}</div>
+      <button onclick="addManualVote(${t.slot},1)" style="background:var(--gold-bd);border:none;color:var(--dark);width:26px;height:26px;border-radius:4px;cursor:pointer;font-size:1rem;font-weight:700;flex-shrink:0;">+</button>
+      <div style="font-size:.75rem;color:var(--gold-bd);font-weight:700;min-width:38px;text-align:right;">${pts}pts</div>`;
     rows.appendChild(row);
   });
 }
