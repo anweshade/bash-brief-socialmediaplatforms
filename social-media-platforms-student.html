@@ -373,6 +373,7 @@ let timerSec = 480;
 let debriefCallback = null;
 let takenSlots = {};   // populated by polling
 let hasVoted = false;
+let localTeams = {}; // cache team names from polls
 
 // ══════════════════════════════════════════════════════
 // SCREEN MANAGEMENT
@@ -463,6 +464,7 @@ async function joinTeam() {
   btn.disabled = true; btn.textContent = 'Joining…';
 
   myTeam = { slot: selectedSlot, name };
+  localTeams[selectedSlot] = name; // cache own team
 
   await sendToSheet({ action: 'claim', slot: selectedSlot, name });
 
@@ -731,14 +733,12 @@ function closeDebrief() {
 async function renderVoteButtons() {
   const loadEl = document.getElementById('vote-loading');
   const data = await getFromSheet('teams');
-  const teams = data?.teams || {};
+  if (data?.teams) Object.assign(localTeams, data.teams);
   if (loadEl) loadEl.style.display = 'none';
   const grid = document.getElementById('vote-grid');
   grid.innerHTML = '';
-  if (!Object.keys(teams).length) {
-    grid.innerHTML = '<div style="text-align:center;padding:1rem;font-size:.85rem;color:var(--muted);">No teams loaded — ask your instructor to check the connection.</div>';
-    return;
-  }
+  // Use fetched teams, falling back to local cache, falling back to "Team N"
+  const teams = Object.keys(localTeams).length ? localTeams : (data?.teams || {});
   for (let i = 0; i < 6; i++) {
     const name = teams[i] || `Team ${i+1}`;
     const isOwn = myTeam?.slot === i;
