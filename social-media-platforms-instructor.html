@@ -359,17 +359,19 @@ async function poll() {
   }
 
   renderTeamsPanel();
-  renderSubmissions();
+  // Only re-render submissions if user hasn't opened a dropdown yet
+  const hasOpenDropdown = [...document.querySelectorAll('.asel')].some(el => el.value !== '' && el.value !== undefined);
+  if (!hasOpenDropdown) renderSubmissions();
 }
 
 // ══════════════════════════════════════════════════════
 // AI SCORING
 // ══════════════════════════════════════════════════════
 function autoScore(sub) {
-  sub.aiScore = parseInt(sub.maxPts) || 0;
+  sub.aiScore = null; // blank — instructor picks
   sub.aiReasoning = '';
   sub.status = 'ai-scored';
-  // Don't call renderSubmissions here — let the user change the dropdown freely
+  renderSubmissions();
 }
 
 // ══════════════════════════════════════════════════════
@@ -569,8 +571,9 @@ function renderSubmissions() {
     const idx = submissions.indexOf(sub);
     const teamOpts = teams.map((t,i) => `<option value="${i}"${t.name===sub.team||t.slot==sub.slot?'selected':''}>${t.name}</option>`).join('');
     const maxPts = parseInt(sub.maxPts)||10;
-    const aiScore = parseInt(sub.aiScore)||maxPts;
-    const maxOpts = Array.from({length:maxPts+1},(_,v)=>`<option value="${v}"${v===aiScore?' selected':''}>${v}</option>`).join('');
+    // Start with blank — instructor picks the score
+    const savedVal = savedScores[idx];
+    const maxOpts = '<option value="">—</option>' + Array.from({length:maxPts+1},(_,v)=>`<option value="${v}"${savedVal!=null&&parseInt(savedVal)===v?' selected':''}>${v} / ${maxPts}</option>`).join('');
 
     if (sub.status==='pending') {
       card.innerHTML = `
@@ -638,7 +641,7 @@ function toggleExp(id) {
 
 function approveSub(idx) {
   const sub = submissions[idx];
-  const score = parseInt(document.getElementById('ssel-'+idx)?.value) ?? 0;
+  const rawVal = document.getElementById('ssel-'+idx)?.value; const score = (rawVal===''||rawVal==null) ? 0 : parseInt(rawVal);
   const teamIdx = parseInt(document.getElementById('tsel-'+idx)?.value)||0;
   sub.finalScore = score; sub.approvedTeam = teamIdx; sub.status = 'approved';
   const key = sub.roundKey;

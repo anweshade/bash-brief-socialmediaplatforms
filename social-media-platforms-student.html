@@ -435,10 +435,18 @@ function applyPhase(phase) {
     showJoinedState(myTeam.slot, myTeam.name);
     currentPhase = 'joined';
   } else if (phase === 'round0') { currentPhase='round0'; goTo('screen-game'); loadRound(0); }
-  else if (phase === 'round1') { currentPhase='round1'; goTo('screen-game'); loadRound(1); }
-  else if (phase === 'round2') { currentPhase='round2'; goTo('screen-game'); loadRound(2); }
-  else if (phase === 'pitch')  { currentPhase='pitch';  goTo('screen-pitch'); }
-  else if (phase === 'vote')   { currentPhase='vote';   goTo('screen-vote'); renderVoteButtons(); }
+  else if (phase === 'round1') {
+    // Show debrief before Round 2 if coming from Round 1
+    if (currentPhase === 'round0') { showDebrief(0); }
+    else { currentPhase='round1'; goTo('screen-game'); loadRound(1); }
+  }
+  else if (phase === 'round2') {
+    // Show debrief before Round 3 if coming from Round 2
+    if (currentPhase === 'round1') { showDebrief(1); }
+    else { currentPhase='round2'; goTo('screen-game'); loadRound(2); }
+  }
+  else if (phase === 'pitch')  { currentPhase='pitch';  clearInterval(timerInt); goTo('screen-pitch'); }
+  else if (phase === 'vote')   { currentPhase='vote';   clearInterval(timerInt); goTo('screen-vote'); renderVoteButtons(); }
 }
 
 function showJoinedState(slot, name) {
