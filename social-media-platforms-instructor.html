@@ -170,6 +170,17 @@ body{font-family:'Barlow',sans-serif;background:var(--i-bg);color:var(--i-text);
           <span style="font-size:.75rem;color:var(--i-muted);" id="sub-count">0 pending</span>
         </div>
       </div>
+      <div id="answer-key" style="display:none;background:#0A0A18;border-top:1px solid var(--i-border);padding:.75rem 1rem;font-size:.78rem;line-height:1.8;color:var(--i-muted);">
+        <div style="color:var(--gold-bd);font-weight:700;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem;">Correct Answers</div>
+        <div><span style="color:#fff;font-weight:600;">R1a ER:</span> Post1=<strong style="color:var(--gold-bd)">3.89%</strong> · Post2=<strong style="color:var(--gold-bd)">2.36%</strong> · Post3=<strong style="color:var(--gold-bd)">4.46%</strong></div>
+        <div><span style="color:#fff;font-weight:600;">R1b Non-follower views:</span> Post1=<strong style="color:var(--gold-bd)">1,268</strong> · Post2=<strong style="color:var(--gold-bd)">17,039</strong> · Post3=<strong style="color:var(--gold-bd)">3,499</strong></div>
+        <div><span style="color:#fff;font-weight:600;">R1c Conversion rates:</span> Post1=<strong style="color:var(--gold-bd)">0.121%</strong> · Post2=<strong style="color:var(--gold-bd)">0.061%</strong> · Post3=<strong style="color:var(--gold-bd)">0.110%</strong> → <strong style="color:#4ADE80">Winner: Post 1</strong></div>
+        <div><span style="color:#fff;font-weight:600;">R1d Summary:</span> Any answer noting Post2 had most reach, Post3 best engagement rate, Post1 best at converting viewers to followers</div>
+        <div style="margin-top:.5rem;"><span style="color:#fff;font-weight:600;">R2a Best new audience reach:</span> <strong style="color:var(--gold-bd)">Post 2</strong> (17,039 non-follower views)</div>
+        <div><span style="color:#fff;font-weight:600;">R2a Format:</span> Gallery outperformed Reels on reach; zero comments = normal for visual content, not a problem</div>
+        <div><span style="color:#fff;font-weight:600;">R2b:</span> Any specific format + time + data reasoning accepted — penalise vague answers with no numbers</div>
+        <div><span style="color:#fff;font-weight:600;">R2c:</span> Any defensible metric (ER, non-follower views, conversion) with reasoning; data gap = no cost data, no audience demographics, no click-through</div>
+      </div>
       <div id="submissions-list" style="padding:.5rem 0;">
         <div style="padding:.75rem 1rem;font-size:.8rem;color:var(--i-muted);">No submissions yet.</div>
       </div>
@@ -353,20 +364,10 @@ async function poll() {
 // ══════════════════════════════════════════════════════
 // AI SCORING
 // ══════════════════════════════════════════════════════
-async function autoScore(sub) {
-  // Use extra param to pass scoring params — get() appends them before &callback=
-  const extra = '&taskId=' + encodeURIComponent(sub.taskId)
-    + '&maxPts=' + sub.maxPts
-    + '&roundKey=' + encodeURIComponent(sub.roundKey)
-    + '&answers=' + encodeURIComponent(sub.answers);
-  const data = await get('score', extra);
-  if (data && data.score !== undefined) {
-    sub.aiScore = Math.min(sub.maxPts, Math.max(0, Math.round(data.score)));
-    sub.aiReasoning = data.reasoning || '';
-  } else {
-    sub.aiScore = Math.round(sub.maxPts * 0.5);
-    sub.aiReasoning = 'Could not score — please set manually.';
-  }
+function autoScore(sub) {
+  // No AI scoring — set to max by default, instructor adjusts
+  sub.aiScore = sub.maxPts;
+  sub.aiReasoning = '';
   sub.status = 'ai-scored';
   renderSubmissions();
 }
@@ -575,7 +576,7 @@ function renderSubmissions() {
         <div class="sub-card-head">
           <span class="sub-team-tag" style="background:${TEAM_COLORS[sub.slot??0]}">${sub.team}</span>
           <span class="sub-task-lbl">Task ${(sub.taskId||'').toUpperCase()} · ${sub.maxPts} pts max</span>
-          <span class="ai-badge done">AI: ${sub.aiScore}/${sub.maxPts}</span>
+          <span class="ai-badge done">Max: ${sub.maxPts} pts</span>
         </div>
         <div class="sub-body">
           <div class="sub-answers${answersVisible?'':' hidden'}" id="sa-${idx}">${sub.answers}</div>
@@ -743,6 +744,12 @@ async function resetGame() {
 // ANSWER VISIBILITY TOGGLE
 // ══════════════════════════════════════════════════════
 let answersVisible = false;
+let keyVisible = false;
+function toggleAnswerKey() {
+  keyVisible = !keyVisible;
+  document.getElementById('answer-key').style.display = keyVisible ? 'block' : 'none';
+  document.getElementById('key-btn').textContent = keyVisible ? '★ Hide key' : '★ Answer key';
+}
 function toggleAnswerVisibility() {
   answersVisible = !answersVisible;
   const btn = document.getElementById('ans-vis-btn');
