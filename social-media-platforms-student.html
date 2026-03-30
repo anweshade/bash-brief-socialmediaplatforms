@@ -483,20 +483,14 @@ async function joinTeam() {
 }
 
 function applyPhase(phase) {
+  // Used only on initial join to put student in the right place
   if (!phase || phase === 'waiting') {
     showJoinedState(myTeam.slot, myTeam.name);
     currentPhase = 'joined';
-  } else if (phase === 'round0') { currentPhase='round0'; goTo('screen-game'); loadRound(0); }
-  else if (phase === 'round1') {
-    if (currentPhase === 'round0') { currentPhase='debrief0'; showDebrief(0); }
-    else if (currentPhase !== 'debrief0') { currentPhase='round1'; goTo('screen-game'); loadRound(1); }
+  } else {
+    lastKnownPhase = null; // force handlePhaseChange to act
+    handlePhaseChange(phase);
   }
-  else if (phase === 'round2') {
-    if (currentPhase === 'round1') { currentPhase='debrief1'; showDebrief(1); }
-    else if (currentPhase !== 'debrief1') { currentPhase='round2'; goTo('screen-game'); loadRound(2); }
-  }
-  else if (phase === 'pitch')  { currentPhase='pitch';  clearInterval(timerInt); goTo('screen-pitch'); }
-  else if (phase === 'vote')   { currentPhase='vote';   clearInterval(timerInt); hasVoted=false; goTo('screen-vote'); renderVoteButtons(); }
 }
 
 function showJoinedState(slot, name) {
@@ -510,19 +504,46 @@ function showJoinedState(slot, name) {
 // PHASE POLLING
 // ══════════════════════════════════════════════════════
 let phasePolling = null;
+let lastKnownPhase = null;
+
 function startPhasePolling() {
   clearInterval(phasePolling);
-  phasePolling = setInterval(async () => {
-    const state = await getFromSheet('state');
-    if (!state) return;
-    handlePhaseChange(state.phase, state);
-  }, 3000);
+  phasePolling = setInterval(pollPhase, 3000);
 }
 
-function handlePhaseChange(phase, state) {
-  if (!phase || phase === currentPhase) return;
-  clearInterval(timerInt);
-  applyPhase(phase);
+async function pollPhase() {
+  const state = await getFromSheet('state');
+  if (!state || !state.phase) return;
+  const phase = state.phase;
+  // Only act if the server phase changed from what we last saw
+  if (phase === lastKnownPhase) return;
+  lastKnownPhase = phase;
+  handlePhaseChange(phase);
+}
+
+function handlePhaseChange(phase) {
+  // Debrief states — don't override with same round
+  if (currentPhase === 'debrief0' && phase === 'round1') return; // debrief in progress
+  if (currentPhase === 'debrief1' && phase === 'round2') return; // debrief in progress
+
+  // Trigger transitions
+  if (phase === 'round0' && currentPhase !== 'round0') {
+    currentPhase = 'round0'; goTo('screen-game'); loadRound(0);
+  } else if (phase === 'round1' && currentPhase === 'round0') {
+    currentPhase = 'debrief0'; showDebrief(0);
+  } else if (phase === 'round1' && currentPhase !== 'round1' && currentPhase !== 'debrief0') {
+    currentPhase = 'round1'; goTo('screen-game'); loadRound(1);
+  } else if (phase === 'round2' && currentPhase === 'round1') {
+    currentPhase = 'debrief1'; showDebrief(1);
+  } else if (phase === 'round2' && currentPhase !== 'round2' && currentPhase !== 'debrief1') {
+    currentPhase = 'round2'; goTo('screen-game'); loadRound(2);
+  } else if (phase === 'pitch' && currentPhase !== 'pitch') {
+    currentPhase = 'pitch'; clearInterval(timerInt); goTo('screen-pitch');
+  } else if (phase === 'vote' && currentPhase !== 'vote') {
+    currentPhase = 'vote'; clearInterval(timerInt); hasVoted = false; goTo('screen-vote'); renderVoteButtons();
+  } else if (phase === 'waiting' && (currentPhase === 'claim' || currentPhase === 'joined')) {
+    // still waiting
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -531,9 +552,6 @@ function handlePhaseChange(phase, state) {
 function loadRound(idx) {
   currentRound = idx;
   currentPhase = 'round' + idx;
-  clearInterval(phasePolling);
-  startPhasePolling();
-
   const cfg = ROUNDS_CFG[idx];
   document.getElementById('s-round-badge').textContent = cfg.label;
   document.getElementById('s-round-badge').className = 'round-badge ' + cfg.badge;
@@ -749,7 +767,7 @@ async function renderVoteButtons() {
       btn.onclick = async () => {
         if (hasVoted) return;
         hasVoted = true;
-        document.querySelectorAll('.vote-btn').forEach(b => { b.onclick = null; b.classList.add(b === btn ? 'voted' : ''); });
+        document.querySelectorAll('.vote-btn').forEach(b => { b.onclick = null; if (b === btn) b.classList.add('voted'); });
         document.getElementById('voted-msg').style.display = 'block';
         await sendToSheet({ action: 'vote', slot: i, name, voterSlot: myTeam?.slot });
         toast('Vote submitted!', 'ok');
@@ -775,8 +793,9 @@ function toast(msg, type='') {
 window.addEventListener('DOMContentLoaded', () => {
   renderTeamGrid();
   loadTeamGrid();
-  // Refresh team grid every 5s so taken slots show up
   setInterval(loadTeamGrid, 5000);
+  // Start phase polling immediately so if game already started, student catches up
+  startPhasePolling();
 });
 </script>
 </body>
