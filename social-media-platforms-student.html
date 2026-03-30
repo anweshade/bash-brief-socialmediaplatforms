@@ -383,7 +383,7 @@ function getFromSheet(action) {
 const TEAM_COLORS = ['#166534','#0F5264','#CC0000','#7A3800','#4A1A6E','#1A3A6E'];
 
 async function loadTeamGrid() {
-  // Poll for taken slots
+  if (myTeam) return; // already joined, stop updating grid
   const data = await getFromSheet('teams');
   takenSlots = data?.teams || {};
   renderTeamGrid();
@@ -391,6 +391,7 @@ async function loadTeamGrid() {
 
 function renderTeamGrid() {
   const grid = document.getElementById('team-grid');
+  if (!grid) return;
   grid.innerHTML = '';
   for (let i = 0; i < 6; i++) {
     const btn = document.createElement('button');
