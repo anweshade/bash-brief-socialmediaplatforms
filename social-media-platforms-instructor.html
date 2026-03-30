@@ -269,12 +269,16 @@ async function post(payload) {
   } catch(e) { return {ok:false}; }
 }
 
-async function get(action, extra='') {
-  if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE')) return null;
-  try {
-    const res = await fetch(SCRIPT_URL + '?action=' + action + extra);
-    return await res.json();
-  } catch(e) { return null; }
+function get(action, extra='') {
+  return new Promise((resolve) => {
+    const cb = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => { delete window[cb]; script.remove(); resolve(null); }, 8000);
+    window[cb] = (data) => { clearTimeout(timeout); delete window[cb]; script.remove(); resolve(data); };
+    script.src = SCRIPT_URL + '?action=' + action + extra + '&callback=' + cb;
+    script.onerror = () => { clearTimeout(timeout); delete window[cb]; script.remove(); resolve(null); };
+    document.head.appendChild(script);
+  });
 }
 
 // ══════════════════════════════════════════════════════
