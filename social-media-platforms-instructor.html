@@ -366,11 +366,10 @@ async function poll() {
 // AI SCORING
 // ══════════════════════════════════════════════════════
 function autoScore(sub) {
-  // No AI scoring — set to max by default, instructor adjusts
-  sub.aiScore = sub.maxPts;
+  sub.aiScore = parseInt(sub.maxPts) || 0;
   sub.aiReasoning = '';
   sub.status = 'ai-scored';
-  renderSubmissions();
+  // Don't call renderSubmissions here — let the user change the dropdown freely
 }
 
 // ══════════════════════════════════════════════════════
@@ -545,6 +544,13 @@ function setScore(i, key, val) {
 // SUBMISSIONS
 // ══════════════════════════════════════════════════════
 function renderSubmissions() {
+  // Save current dropdown values before re-render
+  const savedScores = {};
+  submissions.forEach((_,i) => {
+    const el = document.getElementById('ssel-'+i);
+    if (el) savedScores[i] = el.value;
+  });
+
   const pending = submissions.filter(s => s.status!=='approved'&&s.status!=='rejected');
   const approved = submissions.filter(s => s.status==='approved');
   document.getElementById('sub-count').textContent = `${pending.length} pending`;
@@ -616,6 +622,12 @@ function renderSubmissions() {
       list.appendChild(d);
     });
   }
+
+  // Restore dropdown values user had selected
+  Object.entries(savedScores).forEach(([i, val]) => {
+    const el = document.getElementById('ssel-'+i);
+    if (el && val !== undefined) el.value = val;
+  });
 }
 
 function toggleExp(id) {
