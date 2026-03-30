@@ -156,6 +156,7 @@ body{font-family:'Barlow',sans-serif;background:var(--i-bg);color:var(--i-text);
         </div>
         <div class="phase-btn-row" id="phase-btns">
           <button class="phase-btn primary" onclick="startRound(0)">▶ Start Round 1 (8 min)</button>
+          <button class="phase-btn" style="margin-left:auto;border-color:#AA3333;color:#FF8888;" onclick="resetGame()">↺ Reset for new class</button>
         </div>
       </div>
     </div>
@@ -210,7 +211,7 @@ body{font-family:'Barlow',sans-serif;background:var(--i-bg);color:var(--i-text);
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzhva5uHKEgAQH8bSjiwk0IYslbXFd4XfFcZmQhAU1zXqnrOlcN_i9WHa3N0jVJO-IgGA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqRkAmn2TOkmX1roMBkx_4qYHkpCNhL5n6ZoNIhO4FTPR1AyEQKrQJxiYNNTPvC0oW2Q/exec';
 const TEAM_COLORS = ['#166534','#0F5264','#CC0000','#7A3800','#4A1A6E','#1A3A6E'];
 
 // ══════════════════════════════════════════════════════
@@ -353,29 +354,17 @@ async function poll() {
 // AI SCORING
 // ══════════════════════════════════════════════════════
 async function autoScore(sub) {
-  const rubric = RUBRIC[sub.roundKey] || RUBRIC.r1;
-  const prompt = `Task: ${sub.taskId}\nMax points: ${sub.maxPts}\nStudent answers: ${sub.answers}\n\nScore this.`;
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:150,
-        system:rubric,
-        messages:[{role:'user',content:prompt}],
-      }),
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '';
-    const m = text.match(/\{[\s\S]*?\}/);
-    if (m) {
-      const p = JSON.parse(m[0]);
-      sub.aiScore = Math.min(sub.maxPts, Math.max(0, Math.round(p.score||0)));
-      sub.aiReasoning = p.reasoning || '';
-    } else { sub.aiScore = 0; sub.aiReasoning = 'Could not parse response.'; }
-  } catch(e) {
-    sub.aiScore = Math.round(sub.maxPts*0.5);
-    sub.aiReasoning = 'AI unavailable — defaulted to 50%.';
+  // Ask Apps Script to score via its server-side access
+  const data = await get('score&taskId=' + encodeURIComponent(sub.taskId)
+    + '&maxPts=' + sub.maxPts
+    + '&roundKey=' + sub.roundKey
+    + '&answers=' + encodeURIComponent(sub.answers));
+  if (data && data.score !== undefined) {
+    sub.aiScore = Math.min(sub.maxPts, Math.max(0, Math.round(data.score)));
+    sub.aiReasoning = data.reasoning || '';
+  } else {
+    sub.aiScore = Math.round(sub.maxPts * 0.5);
+    sub.aiReasoning = 'Could not score — please set manually.';
   }
   sub.status = 'ai-scored';
   renderSubmissions();
@@ -716,6 +705,37 @@ function fireConfetti() {
   const pts=Array.from({length:160},()=>({x:Math.random()*c.width,y:-10,vx:(Math.random()-.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,rv:(Math.random()-.5)*7,w:Math.random()*9+4,h:Math.random()*4+3,col:cols[Math.floor(Math.random()*cols.length)],life:1}));
   function draw(){ctx.clearRect(0,0,c.width,c.height);let alive=false;pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.rv;p.vy+=.09;p.life-=.004;if(p.y<c.height&&p.life>0){alive=true;ctx.save();ctx.globalAlpha=p.life;ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.col;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();}});if(alive)requestAnimationFrame(draw);else ctx.clearRect(0,0,c.width,c.height);}
   draw();
+}
+
+// ══════════════════════════════════════════════════════
+// RESET
+// ══════════════════════════════════════════════════════
+async function resetGame() {
+  if (!confirm('Clear all team data, submissions and scores? This cannot be undone.')) return;
+  await post({ action: 'reset' });
+  teams = Array.from({length:6}, (_,i) => ({
+    slot:i, name:'Team '+(i+1),
+    r1:null, r2:null, pitch:null, vote:0, voteCount:0,
+  }));
+  submissions = [];
+  currentPhase = 'setup';
+  currentRound = -1;
+  clearInterval(timerInt);
+  document.getElementById('ctrl-badge').textContent = 'SETUP';
+  document.getElementById('ctrl-title').textContent = 'The Bash Brief';
+  document.getElementById('ctrl-timer').textContent = '—';
+  document.getElementById('ctrl-prog').style.width = '0%';
+  document.getElementById('phase-status').textContent = 'Not started';
+  document.getElementById('teams-joined').textContent = '0';
+  document.getElementById('vote-panel').style.display = 'none';
+  document.getElementById('final-card').style.display = 'none';
+  document.getElementById('phase-btns').innerHTML = `
+    <button class="phase-btn primary" onclick="startRound(0)">▶ Start Round 1 (8 min)</button>
+    <button class="phase-btn" style="margin-left:auto;border-color:#AA3333;color:#FF8888;" onclick="resetGame()">↺ Reset for new class</button>`;
+  [0,1,2].forEach(i => document.getElementById('dot-'+i).className = 'pdot');
+  renderTeamsPanel();
+  renderSubmissions();
+  toast('Reset complete — ready for new class', 'ok');
 }
 
 // ══════════════════════════════════════════════════════
