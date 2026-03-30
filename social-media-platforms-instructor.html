@@ -278,19 +278,18 @@ function get(action, extra='') {
     const cb = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const script = document.createElement('script');
     const url = SCRIPT_URL + '?action=' + action + (extra||'') + '&callback=' + cb;
+    // Register callback BEFORE appending script
+    window[cb] = (data) => {
+      clearTimeout(timeout);
+      delete window[cb]; script.remove(); resolve(data);
+    };
     const timeout = setTimeout(() => {
-      console.warn('[poll timeout]', action, url);
       delete window[cb]; script.remove(); resolve(null);
     }, 8000);
-    window[cb] = (data) => {
-      console.log('[poll ok]', action, data);
-      clearTimeout(timeout); delete window[cb]; script.remove(); resolve(data);
-    };
-    script.src = url;
     script.onerror = (e) => {
-      console.error('[poll error]', action, e);
       clearTimeout(timeout); delete window[cb]; script.remove(); resolve(null);
     };
+    script.src = url;
     document.head.appendChild(script);
   });
 }
