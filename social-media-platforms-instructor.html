@@ -562,7 +562,9 @@ function renderSubmissions() {
     card.className = 'sub-card';
     const idx = submissions.indexOf(sub);
     const teamOpts = teams.map((t,i) => `<option value="${i}"${t.name===sub.team||t.slot==sub.slot?'selected':''}>${t.name}</option>`).join('');
-    const maxOpts = Array.from({length:sub.maxPts+1},(_,v)=>`<option value="${v}"${v===sub.aiScore?' selected':''}>${v}</option>`).join('');
+    const maxPts = parseInt(sub.maxPts)||10;
+    const aiScore = parseInt(sub.aiScore)||maxPts;
+    const maxOpts = Array.from({length:maxPts+1},(_,v)=>`<option value="${v}"${v===aiScore?' selected':''}>${v}</option>`).join('');
 
     if (sub.status==='pending') {
       card.innerHTML = `
@@ -624,7 +626,7 @@ function toggleExp(id) {
 
 function approveSub(idx) {
   const sub = submissions[idx];
-  const score = parseInt(document.getElementById('ssel-'+idx)?.value)||0;
+  const score = parseInt(document.getElementById('ssel-'+idx)?.value) ?? 0;
   const teamIdx = parseInt(document.getElementById('tsel-'+idx)?.value)||0;
   sub.finalScore = score; sub.approvedTeam = teamIdx; sub.status = 'approved';
   const key = sub.roundKey;
