@@ -226,7 +226,8 @@ textarea.ans-input { resize: vertical; min-height: 52px; }
         <span class="task-q">Class Vote — most convincing strategy</span>
       </div>
       <div class="task-body">
-        <div class="why-box"><span class="why-label">Rule:</span>You cannot vote for your own team. 5 points split proportionally by vote share.</div>
+        <div class="why-box"><span class="why-label">Rule:</span>Vote for the most convincing strategy — not your own team. 5 points split proportionally by vote share.</div>
+        <div id="vote-loading" style="text-align:center;padding:1rem;font-size:.85rem;color:var(--muted);">Loading teams…</div>
         <div class="vote-grid" id="vote-grid"></div>
         <div id="voted-msg" style="display:none;margin-top:.75rem;font-size:.85rem;color:var(--green);font-weight:600;text-align:center;">✓ Vote submitted</div>
       </div>
@@ -239,12 +240,25 @@ textarea.ans-input { resize: vertical; min-height: 52px; }
   <div class="modal-card">
     <div class="modal-hdr">
       <span class="modal-badge" id="db-badge">After Round 1</span>
-      <span class="modal-title">Before you move on</span>
+      <span class="modal-title" id="db-modal-title">Group Discussion</span>
     </div>
     <div class="modal-body">
-      <div class="modal-q"><strong>Discuss with your group — 2 min</strong><span id="db-q"></span></div>
-      <div class="modal-note" id="db-note"></div>
-      <button class="modal-btn" onclick="closeDebrief()">Our group discussed — continue →</button>
+      <div id="db-discuss-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;">
+          <strong style="color:var(--gold);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;">Discuss with your group</strong>
+          <span id="db-timer" style="font-family:'Barlow Condensed',sans-serif;font-size:1.8rem;font-weight:700;color:var(--red);">2:00</span>
+        </div>
+        <div class="modal-q"><span id="db-q"></span></div>
+        <div class="modal-note" id="db-note"></div>
+        <button class="modal-btn" id="db-ready-btn" onclick="debriefToShare()">Ready to share with class →</button>
+      </div>
+      <div id="db-share-section" style="display:none;">
+        <div style="background:var(--gold-bg);border-left:3px solid var(--gold-bd);border-radius:0 5px 5px 0;padding:.75rem .9rem;font-size:.9rem;line-height:1.65;color:var(--text);margin-bottom:1rem;">
+          <strong style="color:var(--gold);display:block;font-size:.73rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.3rem;">Share with the class</strong>
+          Your instructor will call on groups. Be ready to share your answer. Listen to others — do they agree with you?
+        </div>
+        <button class="modal-btn" onclick="closeDebrief()">Class discussion done — continue →</button>
+      </div>
     </div>
   </div>
 </div>
@@ -287,7 +301,7 @@ const TASKS = [
   ],
   // Round 3 — presenter prep — 5 min
   [
-    {id:'r3a',pts:0,q:'Presenter: build your 2-minute pitch.',why:"Data doesn't sell itself. Communicating findings clearly and confidently is one of the most valued skills in marketing.",fields:['0–15s Hook — what surprised you most?','15–45s Insight — best post + your engagement rate','45–90s Strategy — 3 formats, schedule, key metric','90–120s Gap — one thing you need to know'],big:true},
+    {id:'r3a',pts:5,q:'Presenter: build your 2-minute pitch. Use Submit to save your notes.',why:"Data doesn't sell itself. Communicating findings clearly and confidently is one of the most valued skills in marketing.",fields:['0–15s Hook — what surprised you most?','15–45s Insight — best post + your engagement rate','45–90s Strategy — 3 formats, schedule, key metric','90–120s Gap — one thing you need to know'],big:true},
   ],
 ];
 
@@ -634,28 +648,72 @@ async function submitTask(taskId, maxPts) {
 // ══════════════════════════════════════════════════════
 // DEBRIEF
 // ══════════════════════════════════════════════════════
+let debriefTimerInt = null;
+let debriefTimerSec = 120;
+
 function showDebrief(idx) {
   const d = DEBRIEFS[idx];
   document.getElementById('db-badge').textContent = d.badge;
+  const titleEl = document.getElementById('db-modal-title');
+  if (titleEl) titleEl.textContent = 'Group Discussion';
   document.getElementById('db-q').textContent = d.q;
   document.getElementById('db-note').innerHTML = d.note;
-  debriefCallback = () => loadRound(d.nextIdx);
+  const discuss = document.getElementById('db-discuss-section');
+  const share = document.getElementById('db-share-section');
+  if (discuss) discuss.style.display = 'block';
+  if (share) share.style.display = 'none';
+  debriefCallback = d.nextAction;
   document.getElementById('debrief-modal').style.display = 'flex';
+  clearInterval(debriefTimerInt);
+  debriefTimerSec = 120;
+  renderDebriefTimer();
+  debriefTimerInt = setInterval(() => {
+    debriefTimerSec--;
+    renderDebriefTimer();
+    if (debriefTimerSec <= 0) clearInterval(debriefTimerInt);
+  }, 1000);
+}
+
+function renderDebriefTimer() {
+  const el = document.getElementById('db-timer');
+  if (!el) return;
+  const m = Math.floor(Math.max(0, debriefTimerSec) / 60);
+  const s = Math.max(0, debriefTimerSec) % 60;
+  el.textContent = m + ':' + s.toString().padStart(2, '0');
+  el.style.color = debriefTimerSec <= 30 ? 'var(--red)' : 'var(--gold)';
+}
+
+function debriefToShare() {
+  clearInterval(debriefTimerInt);
+  const discuss = document.getElementById('db-discuss-section');
+  const share = document.getElementById('db-share-section');
+  if (discuss) discuss.style.display = 'none';
+  if (share) share.style.display = 'block';
+  const titleEl = document.getElementById('db-modal-title');
+  if (titleEl) titleEl.textContent = 'Share with class';
 }
 
 function closeDebrief() {
+  clearInterval(debriefTimerInt);
   document.getElementById('debrief-modal').style.display = 'none';
   if (debriefCallback) { debriefCallback(); debriefCallback = null; }
 }
+
 
 // ══════════════════════════════════════════════════════
 // VOTE
 // ══════════════════════════════════════════════════════
 async function renderVoteButtons() {
+  const loadEl = document.getElementById('vote-loading');
   const data = await getFromSheet('teams');
   const teams = data?.teams || {};
+  if (loadEl) loadEl.style.display = 'none';
   const grid = document.getElementById('vote-grid');
   grid.innerHTML = '';
+  if (!Object.keys(teams).length) {
+    grid.innerHTML = '<div style="text-align:center;padding:1rem;font-size:.85rem;color:var(--muted);">No teams loaded — ask your instructor to check the connection.</div>';
+    return;
+  }
   for (let i = 0; i < 6; i++) {
     const name = teams[i] || `Team ${i+1}`;
     const isOwn = myTeam?.slot === i;
