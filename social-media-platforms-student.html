@@ -337,8 +337,8 @@ function goTo(id) {
 // SEND TO GOOGLE SHEETS
 // ══════════════════════════════════════════════════════
 async function sendToSheet(payload) {
-  if (!SCRIPT_URL || SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbybSi0XHFrS_t2Nc799_A8-8_W4398ooPciUPDWdPhOa3v0zF0olZuN_gPmZCu0kPA2lA/exec') {
-    console.warn('No script URL configured — data not saved');
+  if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE_YOUR')) {
+    console.warn('No script URL configured');
     return { ok: true };
   }
   try {
@@ -350,6 +350,7 @@ async function sendToSheet(payload) {
     });
     return { ok: true };
   } catch(e) {
+    console.error('sendToSheet failed:', e.message);
     return { ok: false, error: e.message };
   }
 }
