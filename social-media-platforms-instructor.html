@@ -274,24 +274,12 @@ async function post(payload) {
 }
 
 function get(action, extra='') {
-  return new Promise((resolve) => {
-    const cb = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    const script = document.createElement('script');
-    const url = SCRIPT_URL + '?action=' + action + (extra||'') + '&callback=' + cb;
-    // Register callback BEFORE appending script
-    window[cb] = (data) => {
-      clearTimeout(timeout);
-      delete window[cb]; script.remove(); resolve(data);
-    };
-    const timeout = setTimeout(() => {
-      delete window[cb]; script.remove(); resolve(null);
-    }, 8000);
-    script.onerror = (e) => {
-      clearTimeout(timeout); delete window[cb]; script.remove(); resolve(null);
-    };
-    script.src = url;
-    document.head.appendChild(script);
-  });
+  return fetch(SCRIPT_URL + '?action=' + action + (extra||''), {
+    method: 'GET',
+    redirect: 'follow',
+  })
+  .then(r => r.json())
+  .catch(() => null);
 }
 
 // ══════════════════════════════════════════════════════
