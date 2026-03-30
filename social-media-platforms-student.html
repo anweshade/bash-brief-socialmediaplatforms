@@ -180,6 +180,42 @@ textarea.ans-input { resize: vertical; min-height: 52px; }
   <div class="page-body" id="s-page-body"></div>
 </div>
 
+<!-- ══ MISSION BRIEF SCREEN ══ -->
+<div id="screen-brief" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo">THE <em>BASH</em> BRIEF</div>
+    <div class="team-tag" id="brief-team-tag">Team ?</div>
+  </div>
+  <div class="page-body" style="max-width:600px;margin:0 auto;padding:2rem 1rem;">
+    <div style="background:var(--red);border-radius:10px;padding:1.5rem 1.5rem 1.2rem;margin-bottom:1.1rem;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:.4rem;">Your Mission</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:#fff;line-height:1.1;margin-bottom:.75rem;">You work for UNL's social media team.</div>
+      <div style="font-size:.9rem;color:rgba(255,255,255,.85);line-height:1.65;">Last August's Back to School Bash generated three Instagram posts across three days — all shot at the same event. You have the real performance data.<br><br>Your job: figure out what worked, what didn't, and pitch a better plan for next year. The most convincing pitch wins the class vote.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem;">Three Rounds</div>
+      <div style="display:flex;flex-direction:column;gap:.6rem;">
+        <div style="display:flex;gap:.75rem;align-items:flex-start;">
+          <div style="background:var(--green);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;padding:.2rem .5rem;border-radius:3px;flex-shrink:0;margin-top:.1rem;">01</div>
+          <div><div style="font-weight:600;font-size:.9rem;">Analyst Unlocks — 8 min</div><div style="font-size:.8rem;color:var(--muted);">Run the numbers: engagement rates, non-follower reach, follower conversion</div></div>
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:flex-start;">
+          <div style="background:var(--teal);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;padding:.2rem .5rem;border-radius:3px;flex-shrink:0;margin-top:.1rem;">02</div>
+          <div><div style="font-weight:600;font-size:.9rem;">Strategist Builds — 12 min</div><div style="font-size:.8rem;color:var(--muted);">Interpret the data and decide: formats, schedule, what to boost</div></div>
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:flex-start;">
+          <div style="background:var(--gold);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;padding:.2rem .5rem;border-radius:3px;flex-shrink:0;margin-top:.1rem;">03</div>
+          <div><div style="font-weight:600;font-size:.9rem;">Presenter Preps — 5 min</div><div style="font-size:.8rem;color:var(--muted);">Build your 2-minute pitch — you present to the whole class</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--light);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;font-size:.85rem;color:var(--muted);line-height:1.6;text-align:center;">
+      <strong style="color:var(--text);">Assign your roles:</strong> Data Analyst · Strategist · Presenter<br>
+      Keep this screen open — the game will start automatically.
+    </div>
+  </div>
+</div>
+
 <!-- ══ WAITING SCREEN ══ -->
 <div id="screen-waiting" class="screen">
   <div class="topbar">
@@ -450,33 +486,22 @@ function applyPhase(phase) {
     currentPhase = 'joined';
   } else if (phase === 'round0') { currentPhase='round0'; goTo('screen-game'); loadRound(0); }
   else if (phase === 'round1') {
-    // Show debrief before Round 2 if coming from Round 1
-    if (currentPhase === 'round0') { showDebrief(0); }
-    else { currentPhase='round1'; goTo('screen-game'); loadRound(1); }
+    if (currentPhase === 'round0') { currentPhase='debrief0'; showDebrief(0); }
+    else if (currentPhase !== 'debrief0') { currentPhase='round1'; goTo('screen-game'); loadRound(1); }
   }
   else if (phase === 'round2') {
-    // Show debrief before Round 3 if coming from Round 2
-    if (currentPhase === 'round1') { showDebrief(1); }
-    else { currentPhase='round2'; goTo('screen-game'); loadRound(2); }
+    if (currentPhase === 'round1') { currentPhase='debrief1'; showDebrief(1); }
+    else if (currentPhase !== 'debrief1') { currentPhase='round2'; goTo('screen-game'); loadRound(2); }
   }
   else if (phase === 'pitch')  { currentPhase='pitch';  clearInterval(timerInt); goTo('screen-pitch'); }
-  else if (phase === 'vote')   { currentPhase='vote';   clearInterval(timerInt); goTo('screen-vote'); renderVoteButtons(); }
+  else if (phase === 'vote')   { currentPhase='vote';   clearInterval(timerInt); hasVoted=false; goTo('screen-vote'); renderVoteButtons(); }
 }
 
 function showJoinedState(slot, name) {
   currentPhase = 'joined';
-  const colors = ['#166534','#0F5264','#CC0000','#7A3800','#4A1A6E','#1A3A6E'];
-  const card = document.querySelector('.claim-card');
-  card.innerHTML = `
-    <div style="text-align:center;padding:.5rem 0 1rem;">
-      <div style="font-size:2.5rem;margin-bottom:.6rem;">✅</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:700;color:${colors[slot]};margin-bottom:.25rem;">Team ${slot+1}</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:var(--dark);margin-bottom:.75rem;">${name}</div>
-      <div style="background:var(--light);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;font-size:.88rem;color:var(--muted);line-height:1.6;">
-        <strong style="color:var(--text);">You're in!</strong> Keep this screen open.<br>
-        The game will start automatically when your instructor hits Start.
-      </div>
-    </div>`;
+  // Show mission brief screen instead of modifying claim card
+  document.getElementById('brief-team-tag').textContent = name;
+  goTo('screen-brief');
 }
 
 // ══════════════════════════════════════════════════════
