@@ -288,7 +288,7 @@ function get(action, extra='') {
 window.addEventListener('DOMContentLoaded', () => {
   // Show student URL
   const url = window.location.href.replace('instructor.html','student.html');
-  document.getElementById('student-url').textContent = url;
+  const suEl = document.getElementById('student-url'); if(suEl) suEl.textContent = url;
 
   renderTeamsPanel();
   startPolling();
@@ -311,7 +311,7 @@ async function poll() {
       const i = parseInt(slot);
       if (teams[i]) teams[i].name = name;
     });
-    document.getElementById('teams-joined').textContent = Object.keys(teamData.teams).length;
+    const tjEl = document.getElementById('teams-joined'); if(tjEl) tjEl.textContent = Object.keys(teamData.teams).length;
   }
 
   // Poll submissions
@@ -727,7 +727,7 @@ async function resetGame() {
   document.getElementById('ctrl-timer').textContent = '—';
   document.getElementById('ctrl-prog').style.width = '0%';
   document.getElementById('phase-status').textContent = 'Not started';
-  document.getElementById('teams-joined').textContent = '0';
+  const tjEl2 = document.getElementById('teams-joined'); if(tjEl2) tjEl2.textContent = '0';
   document.getElementById('vote-panel').style.display = 'none';
   document.getElementById('final-card').style.display = 'none';
   document.getElementById('phase-btns').innerHTML = `
