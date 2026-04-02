@@ -172,7 +172,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);font
       <div class="sec-head"><span class="sec-label">Final Results</span></div>
       <div style="padding:.85rem 1.1rem;">
         <table class="final-table" id="final-tbl">
-          <thead><tr><th>Rank</th><th>Team</th><th>R1</th><th>R2</th><th>Pitch</th><th>Vote</th><th>Total</th></tr></thead>
+          <thead><tr><th>Rank</th><th>Team</th><th>R1/9</th><th>R2/7</th><th>Pitch/5</th><th>Vote/5</th><th>Total/26</th></tr></thead>
           <tbody id="final-tbody"></tbody>
         </table>
       </div>
@@ -331,16 +331,10 @@ function savePitch(slot, val) {
 // ══════════════════════════════════════════════════════
 // SUBMISSIONS
 // ══════════════════════════════════════════════════════
-let savedScores = {};
+
 
 function renderSubmissions() {
-  // Save current dropdown values
-  submissions.forEach((_,i) => {
-    const el = document.getElementById('ssel-'+i);
-    if (el && el.value !== '') savedScores[i] = el.value;
-  });
-
-  const pending = submissions.filter(s => s.status!=='approved'&&s.status!=='rejected');
+    const pending = submissions.filter(s => s.status!=='approved'&&s.status!=='rejected');
   const approved = submissions.filter(s => s.status==='approved');
   const subCount = document.getElementById('sub-count');
   if (subCount) subCount.textContent = `${pending.length} pending`;
@@ -358,50 +352,39 @@ function renderSubmissions() {
     const idx = submissions.indexOf(sub);
     const card = document.createElement('div');
     card.className = 'sub-card';
-    const maxPts = parseInt(sub.maxPts)||10;
     const taskId = sub.taskId || '';
-    const isR1 = taskId.startsWith('r1');
-    const isR2 = taskId.startsWith('r2');
-
-    // Quick score buttons based on round
-    let quickBtns = '';
-    if (isR1) {
-      // Auto-graded — show suggested score with approve/adjust
-      const ag = sub.autoGrade;
-      if (ag) {
-        quickBtns = `<div style="background:var(--light);border:1px solid var(--border);border-radius:4px;padding:.4rem .6rem;font-size:.78rem;color:var(--muted);margin-bottom:.4rem;line-height:1.6;">
-          <strong style="color:var(--green);">Auto-score: ${ag.score}/${ag.max}</strong> · ${ag.feedback}
-        </div>`;
-      }
-    }
-
-    const savedVal = savedScores[idx] != null ? parseInt(savedScores[idx]) : (sub.autoGrade ? sub.autoGrade.score : null);
-    const scoreRange = isR1 ? maxPts+1 : (isR2 ? 11 : 6);
-    const quickRange = Array.from({length:scoreRange},(_,v)=>v);
+    const isAutoGradeable = ['r1a','r1b','r1c','r2a','r2b','r2c','r2d'].includes(taskId);
 
     card.innerHTML = `
       <div class="sub-card-head">
         <span class="sub-team-tag" style="background:${TEAM_COLORS[sub.slot??0]}">${sub.team}</span>
-        <span class="sub-task-lbl">Task ${taskId.toUpperCase()} · ${maxPts} pts</span>
+        <span class="sub-task-lbl">Task ${taskId.toUpperCase()}</span>
+        ${isAutoGradeable ? `<span id="ag-badge-${idx}" style="font-size:.75rem;font-weight:700;color:var(--muted);margin-left:auto;">scoring…</span>` : ''}
       </div>
       <div class="sub-answers${answersVisible?'':' hidden'}" id="sa-${idx}">${sub.answers}</div>
-      <button class="expand-lnk${answersVisible?'':' hidden'}" onclick="toggleExp('sa-${idx}')">Show all ▼</button>
-      ${quickBtns}
-      <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.4rem;align-items:center;">
-        ${quickRange.map(v=>`<button onclick="quickScore(${idx},${v})" id="qb-${idx}-${v}"
-          style="min-width:36px;padding:.3rem .4rem;border-radius:4px;font-size:.85rem;font-weight:700;cursor:pointer;border:2px solid ${v===savedVal?'var(--green)':'var(--border2)'};background:${v===savedVal?'var(--green)':'var(--surface)'};color:${v===savedVal?'#fff':'var(--text)'};transition:all .1s;">${v}</button>`).join('')}
-        <button class="no-btn" style="margin-left:auto;" onclick="rejectSub(${idx})">✕ Reject</button>
-      </div>`;
+      <button class="expand-lnk${answersVisible?'':' hidden'}" onclick="toggleExp('sa-${idx}')">Show all ▼</button>`;
     list.appendChild(card);
 
-    // Auto-fetch grade for R1 if not done yet
-    if (isR1 && !sub.autoGrade && !sub.autoGrading) {
+    // Auto-grade silently and approve immediately
+    if (isAutoGradeable && !sub.autoGrade && !sub.autoGrading) {
       sub.autoGrading = true;
       get('autograde', '&taskId=' + encodeURIComponent(taskId) + '&answers=' + encodeURIComponent(sub.answers||'')).then(result => {
         if (result && result.score != null) {
           sub.autoGrade = result;
-          if (savedScores[idx] == null) savedScores[idx] = result.score;
+          // Auto-approve with calculated score
+          const teamIdx = sub.slot != null ? parseInt(sub.slot) : teams.findIndex(t=>t.name===sub.team);
+          const ti = teamIdx >= 0 ? teamIdx : 0;
+          sub.finalScore = result.score;
+          sub.approvedTeam = ti;
+          sub.status = 'approved';
+          const rkey = taskId.startsWith('r1') ? 'r1' : 'r2';
+          teams[ti][rkey] = (+(teams[ti][rkey]||0)) + result.score;
+          post({action:'setScore', slot:ti, key:rkey, value:teams[ti][rkey]});
+          renderTeamsPanel();
           renderSubmissions();
+        } else {
+          const badge = document.getElementById('ag-badge-'+idx);
+          if (badge) { badge.textContent='check answers'; badge.style.color='var(--red)'; }
         }
       });
     }
@@ -420,11 +403,6 @@ function renderSubmissions() {
     });
   }
 
-  // Restore saved scores
-  Object.entries(savedScores).forEach(([i,val]) => {
-    const el = document.getElementById('ssel-'+i);
-    if (el && val) el.value = val;
-  });
 }
 
 function toggleAnswerVisibility() {
@@ -441,24 +419,6 @@ function toggleExp(id) {
   if (btn) btn.textContent = el.classList.contains('exp') ? 'Hide ▲' : 'Show all ▼';
 }
 
-function quickScore(idx, score) {
-  savedScores[idx] = score;
-  // Update button styles immediately
-  const sub = submissions[idx];
-  const maxPts = parseInt(sub?.maxPts)||10;
-  const scoreRange = (sub?.taskId||'').startsWith('r1') ? maxPts+1 : ((sub?.taskId||'').startsWith('r2') ? 11 : 6);
-  Array.from({length:scoreRange},(_,v)=>v).forEach(v => {
-    const btn = document.getElementById(`qb-${idx}-${v}`);
-    if (!btn) return;
-    const sel = v === score;
-    btn.style.borderColor = sel ? 'var(--green)' : 'var(--border2)';
-    btn.style.background = sel ? 'var(--green)' : 'var(--surface)';
-    btn.style.color = sel ? '#fff' : 'var(--text)';
-  });
-  // Auto-approve after selecting score
-  autoApprove(idx, score);
-}
-
 function autoApprove(idx, score) {
   const sub = submissions[idx];
   if (!sub) return;
@@ -471,21 +431,6 @@ function autoApprove(idx, score) {
   post({action:'setScore', slot:ti, key, value:teams[ti][key]});
   delete savedScores[idx];
   toast(`+${score} pts → ${teams[ti].name}`, 'ok');
-  renderTeamsPanel(); renderSubmissions();
-}
-
-function approveSub(idx) {
-  const sub = submissions[idx];
-  const rawVal = document.getElementById('ssel-'+idx)?.value;
-  if (rawVal === '' || rawVal == null) { toast('Set a score before approving','err'); return; }
-  const score = parseInt(rawVal);
-  const teamIdx = parseInt(document.getElementById('tsel-'+idx)?.value)||0;
-  sub.finalScore = score; sub.approvedTeam = teamIdx; sub.status = 'approved';
-  const key = sub.roundKey || 'r1';
-  teams[teamIdx][key] = (+(teams[teamIdx][key]||0)) + score;
-  post({action:'setScore', slot:teamIdx, key, value:teams[teamIdx][key]});
-  delete savedScores[idx];
-  toast(`+${score} pts → ${teams[teamIdx].name}`, 'ok');
   renderTeamsPanel(); renderSubmissions();
 }
 
