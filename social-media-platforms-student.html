@@ -797,20 +797,20 @@ function buildPitchBuilder() {
     <div id="pb-edit" class="pb-edit">
       <div class="pb-field">
         <label>Hook — what surprised you most? (10–15 sec)</label>
-        <input id="pb-hook" placeholder="e.g. The gallery post got 4.5× more reach than either Reel..." oninput="updateSlide()" maxlength="120" />
+        <input id="pb-hook" placeholder="Start with something surprising from the data…" oninput="updateSlide()" maxlength="120" />
         <div class="char-hint">Keep it to one punchy sentence.</div>
       </div>
       <div class="pb-field">
         <label>Key Insight — best post + your engagement rate finding (15–30 sec)</label>
-        <textarea id="pb-insight" placeholder="e.g. Post 2 reached 17,039 non-followers — 57% of its audience was new. Meanwhile Post 3 had the highest engagement rate at 4.46%..." oninput="updateSlide()" maxlength="220"></textarea>
+        <textarea id="pb-insight" placeholder="What did the numbers tell you? Cite specific figures from your Round 1 results…" oninput="updateSlide()" maxlength="220"></textarea>
       </div>
       <div class="pb-field">
         <label>Strategy — 3 post formats, schedule, key metric (30–50 sec)</label>
-        <textarea id="pb-strategy" placeholder="e.g. Keep gallery format for Saturday reach post. Switch Post 3 to gallery on Monday to test format effect. Boost Post 2 — proven non-follower reach. Track follower conversion rate..." oninput="updateSlide()" maxlength="280"></textarea>
+        <textarea id="pb-strategy" placeholder="What format, what timing, what to boost, what metric to track…" oninput="updateSlide()" maxlength="280"></textarea>
       </div>
       <div class="pb-field">
         <label>Gap — one thing you need to know (50–60 sec)</label>
-        <input id="pb-gap" placeholder="e.g. We don't have cost data — can't calculate actual ROI of the boost." oninput="updateSlide()" maxlength="120" />
+        <input id="pb-gap" placeholder="What would you need to know that this data does not show?" oninput="updateSlide()" maxlength="120" />
       </div>
       <button class="sub-btn" id="sub-r3a" onclick="submitPitch()">Submit pitch deck</button>
       <div class="sub-status" id="sts-r3a" style="display:none;"><span class="sub-dot"></span><span>Pitch deck submitted</span></div>
@@ -956,7 +956,7 @@ function showCorrectAnswers(taskId, task, studentAnswers) {
       const ca = (k.answer||'').toLowerCase().trim();
       if (!sv || sv === 'select…' || sv.length < 2) {
         isCorrect = false;
-      } else if (ca === 'any specific format' || ca === 'any except "total views"' || ca === 'any metric except total views alone' || ca === 'see below' || ca === 'any defensible format') {
+      } else if (ca === 'any specific format' || ca === 'any except "total views"' || ca === 'any metric except total views alone' || ca === 'see below' || ca === 'any defensible format' || ca === 'your choice' || ca === 'gallery recommended' || ca.startsWith('er, non') || ca === 'your choice') {
         // These have multiple valid answers — just check they picked something
         isCorrect = sv && sv !== 'select…' && sv.length > 1;
       } else {
