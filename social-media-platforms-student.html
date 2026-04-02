@@ -467,7 +467,7 @@ const ANSWER_KEY = {
     {answer:'Your choice', working:'Any format works for Post 3 — but consider testing Gallery instead of Reel to see if format explains the lower reach vs Post 2 (both published on similar days).', tol:null},
   ],
   r2d: [
-    {answer:'ER, non-follower views, or conversion rate', working:'Engagement Rate, non-follower views, or follower conversion rate are all defensible — each ties to a specific strategy goal. "Total views" alone tells you reach but not quality.', tol:null},
+    {answer:'__multi__:engagement|non-follower|conversion', working:'Engagement Rate, non-follower views, or follower conversion rate are all defensible — each ties to a specific strategy goal. "Total views" alone tells you reach but not quality.', tol:null, display:'ER, non-follower views, or conversion rate'},
   ],
 };
 
@@ -951,24 +951,22 @@ function showCorrectAnswers(taskId, task, studentAnswers) {
     let isCorrect = false;
 
     if (k.tol === null) {
-      // Select/text — compare against correct answer (case-insensitive partial match)
-      const sv = (studentVal||'').toLowerCase().trim();
+      const sv = (studentVal||'').toLowerCase().replace(/[^a-z0-9]/g,' ').trim();
       const ca = (k.answer||'').toLowerCase().trim();
-      if (!sv || sv === 'select…' || sv.length < 2) {
+      const OPEN_ENDED = ['your choice', 'gallery recommended'];
+      const isOpenEnded = OPEN_ENDED.some(x => ca.includes(x));
+      const isMulti = ca.startsWith('__multi__:');
+      if (!sv || sv === 'select' || sv.length < 1) {
         isCorrect = false;
-      } else if (ca === 'any specific format' || ca === 'any except "total views"' || ca === 'any metric except total views alone' || ca === 'see below' || ca === 'any defensible format' || ca === 'your choice' || ca === 'gallery recommended' || ca.startsWith('er, non') || ca === 'your choice') {
-        // These have multiple valid answers — just check they picked something
-        isCorrect = sv && sv !== 'select…' && sv.length > 1;
+      } else if (isOpenEnded) {
+        isCorrect = true;
+      } else if (isMulti) {
+        // Multiple valid answers — check if student answer contains any of the valid tokens
+        const validTokens = ca.replace('__multi__:','').split('|');
+        isCorrect = validTokens.some(t => sv.includes(t.trim()));
       } else {
-        // Compare answers — check if the LAST significant word matches (e.g. "post 1" vs "post 3")
-        const svWords = sv.replace(/[^a-z0-9\s]/g,'').trim().split(/\s+/);
-        const caWords = ca.replace(/[^a-z0-9\s]/g,'').trim().split(/\s+/);
-        const svKey = svWords[svWords.length-1]; // last word: "1", "2", "gallery", "no"
-        const caKey = caWords[caWords.length-1];
-        // Also try first word match for single-word answers like "gallery", "no", "yes"
-        const svFirst = svWords[0];
-        const caFirst = caWords[0];
-        isCorrect = (svKey === caKey) || (svFirst === caFirst && caWords.length === 1);
+        const token = ca.replace(/^(post|format|option)\s*/i,'').split(/[\s,—]/)[0].trim();
+        isCorrect = token.length > 0 && sv.includes(token);
       }
     } else {
       const num = parseFloat((studentVal||'').replace(/[%,\s]/g,''));
@@ -978,6 +976,7 @@ function showCorrectAnswers(taskId, task, studentAnswers) {
 
     const bg = isCorrect ? '#F0FFF4' : '#FFF5F5';
     const borderColor = isCorrect ? '#86EFAC' : '#FCA5A5';
+    const displayAnswer = k.display || k.answer.replace(/^__multi__:[^,]+/,'').replace('__multi__:','');
     const icon = isCorrect ? '✓' : '✗';
     const iconColor = isCorrect ? '#166534' : '#CC0000';
 
@@ -989,7 +988,7 @@ function showCorrectAnswers(taskId, task, studentAnswers) {
       html += `<br><span style="font-size:.78rem;color:var(--muted);">You answered: <em>${studentVal||'blank'}</em></span>`;
     }
     html += `</div>`;
-    html += `<strong style="color:${iconColor};flex-shrink:0;">${k.answer}</strong>`;
+    html += `<strong style="color:${iconColor};flex-shrink:0;">${displayAnswer}</strong>`;
     html += `</div>`;
     if (!isCorrect || k.tol === null) {
       html += `<div style="font-size:.78rem;color:#555;line-height:1.55;padding-left:1.5rem;margin-top:.2rem;">${k.working}</div>`;
