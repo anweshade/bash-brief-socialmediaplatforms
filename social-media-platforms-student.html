@@ -951,8 +951,19 @@ function showCorrectAnswers(taskId, task, studentAnswers) {
     let isCorrect = false;
 
     if (k.tol === null) {
-      // Select/text — check if student answered anything
-      isCorrect = studentVal && studentVal !== 'Select…' && studentVal.length > 1;
+      // Select/text — compare against correct answer (case-insensitive partial match)
+      const sv = (studentVal||'').toLowerCase().trim();
+      const ca = (k.answer||'').toLowerCase().trim();
+      if (!sv || sv === 'select…' || sv.length < 2) {
+        isCorrect = false;
+      } else if (ca === 'any specific format' || ca === 'any except "total views"' || ca === 'any metric except total views alone' || ca === 'see below' || ca === 'any defensible format') {
+        // These have multiple valid answers — just check they picked something
+        isCorrect = sv && sv !== 'select…' && sv.length > 1;
+      } else {
+        // Check if student answer contains the key word of the correct answer
+        isCorrect = sv.includes(ca.split(' ')[0].replace(/[^a-z0-9]/g,'')) ||
+                    ca.includes(sv.split(' ')[0].replace(/[^a-z0-9]/g,''));
+      }
     } else {
       const num = parseFloat((studentVal||'').replace(/[%,\s]/g,''));
       const correct = parseFloat((k.answer||'').replace(/[%,]/g,''));
