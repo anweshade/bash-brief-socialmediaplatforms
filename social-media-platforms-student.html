@@ -159,6 +159,8 @@ textarea.ans-input{resize:vertical;min-height:60px;}
 .vote-btn.own-team{opacity:.4;cursor:not-allowed;}
 .vote-name{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:700;display:block;}
 .vote-note{font-size:.72rem;color:var(--muted);display:block;margin-top:.2rem;}
+.answer-reveal{animation:fadeIn .4s;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
 
 /* BRIEF SCREEN */
 .brief-card{background:var(--red);border-radius:10px;padding:1.4rem 1.4rem 1.2rem;margin-bottom:1rem;}
@@ -326,86 +328,120 @@ const SCENARIOS = [
 ];
 
 const TASKS = [
-  // Round 1 — analyst unlocks
   [
     {
-      id:'r1a', pts:3,
-      director:'Your director asks: "Which post actually got people to engage — not just see it?"',
+      id:'r1a', pts:3, type:'number',
+      director:"Your director asks: 'Which post actually got people to engage — not just see it?'",
       q:'Calculate the Engagement Rate for all 3 posts.',
-      context:'Your instructor covered this metric. A high view count means reach. Engagement rate tells you how many people actually responded — it\'s the fairness metric when post sizes vary dramatically.',
-      formula:'Engagement Rate = Total Interactions ÷ Total Views × 100',
-      fields:['Post 1 ER (%)','Post 2 ER (%)','Post 3 ER (%)'],
+      context:"Engagement Rate shows how many people responded to what they saw. It is the fairness metric when post sizes vary. Apply the metric your instructor taught you.",
+      fields:[
+        {label:'Post 1 ER (%)', id:'p1er', type:'number', placeholder:'e.g. 3.89'},
+        {label:'Post 2 ER (%)', id:'p2er', type:'number', placeholder:'e.g. 2.36'},
+        {label:'Post 3 ER (%)', id:'p3er', type:'number', placeholder:'e.g. 4.46'},
+      ]
     },
     {
-      id:'r1b', pts:3,
-      director:'Your director asks: "How many real new people did each post actually reach?"',
+      id:'r1b', pts:3, type:'number',
+      director:"Your director asks: 'How many real new people did each post actually reach?'",
       q:'Calculate the actual non-follower view count for each post.',
-      context:'The percentages in the data tell you the split. But 57% of 300 is very different from 57% of 30,000. Your director wants the raw number — that\'s the scale of new audience actually reached.',
-      formula:'Non-follower Views = Total Views × Non-follower %',
-      fields:['Post 1 (views)','Post 2 (views)','Post 3 (views)'],
+      context:'The percentages in the data show the split — but your director wants the raw number. 57% of 300 is very different from 57% of 30,000.',
+      fields:[
+        {label:'Post 1 non-follower views', id:'p1nf', type:'number', placeholder:'e.g. 1268'},
+        {label:'Post 2 non-follower views', id:'p2nf', type:'number', placeholder:'e.g. 17039'},
+        {label:'Post 3 non-follower views', id:'p3nf', type:'number', placeholder:'e.g. 3499'},
+      ]
     },
     {
-      id:'r1c', pts:2,
-      director:'Your director asks: "Which post was the most efficient at turning viewers into followers?"',
-      q:'Calculate the follower conversion rate for each post. Which was most efficient?',
-      context:'Getting 18 new followers sounds great — until you see it took 29,684 views. A post that earns followers at a higher rate is doing more strategic long-term work, even with fewer views.',
-      formula:'Follower Conversion Rate = New Followers ÷ Total Views × 100',
-      fields:['Post 1 rate (%)','Post 2 rate (%)','Post 3 rate (%)','Most efficient post'],
+      id:'r1c', pts:3, type:'number',
+      director:"Your director asks: 'Which post was most efficient at turning viewers into followers?'",
+      q:'Calculate the follower conversion rate for each post, then select the most efficient.',
+      context:'Volume is not efficiency. A post that earned 8 followers from 6,000 views may be doing more strategic work than one that earned 18 from 30,000.',
+      fields:[
+        {label:'Post 1 conversion (%)', id:'p1cr', type:'number', placeholder:'e.g. 0.121'},
+        {label:'Post 2 conversion (%)', id:'p2cr', type:'number', placeholder:'e.g. 0.061'},
+        {label:'Post 3 conversion (%)', id:'p3cr', type:'number', placeholder:'e.g. 0.110'},
+        {label:'Most efficient post', id:'winner', type:'select', options:['Select…','Post 1','Post 2','Post 3']},
+      ]
     },
     {
-      id:'r1d', pts:2,
-      director:'Your director asks: "Give me the one-sentence headline — what does this data say?"',
-      q:'Write one sentence that captures the key insight from all three posts.',
-      context:'She won\'t read a spreadsheet. She needs the headline finding — the "so what" that a marketer pulls out of the numbers.',
-      fields:['Your one-sentence summary'],
-      big:true,
-    },
-  ],
-  // Round 2 — strategist builds
-  [
-    {
-      id:'r2a', pts:4,
-      director:'Your director asks: "What does this data actually tell us about what\'s working?"',
-      q:'Interpret: Which post best reached new audiences? What does Reels vs. gallery suggest? Were zero comments a problem?',
-      context:'Anyone can read numbers. Your job is to explain what they mean. A good interpretation cites specific figures, identifies patterns, and makes a judgment call your director can act on.',
-      fields:['Best reach post + the number','Reels vs. gallery — what the data suggests','Zero comments on 2 posts — problem or not?'],
-    },
-    {
-      id:'r2b', pts:4,
-      director:'Your director asks: "What should we actually do differently next year?"',
-      q:'Decide: format + posting time for each of the 3 posts next year, and which one to boost with paid spend.',
-      context:'"Post more content" is not a strategy. Your director needs specifics: what format, when, and where to spend the budget. Every choice should be traceable back to something in the data.',
-      fields:['Post 1 — format + posting time','Post 2 — format + posting time','Post 3 — format + posting time','Which post to boost + why'],
-    },
-    {
-      id:'r2c', pts:2,
-      director:'Your director asks: "How do we prove this campaign worked — and what don\'t we know?"',
-      q:'Name one metric to report as proof the campaign succeeded. Name one thing this data doesn\'t show.',
-      context:'Choosing the right metric — and being honest about gaps — shows strategic maturity. Every campaign has blind spots. The best analysts name theirs before someone else does.',
-      fields:['Metric to report + reason why'],
-      big:true,
-    },
-    {
-      id:'r2d', pts:0,
-      director:null,
-      q:'Data gap: what is one thing this data does NOT show that you\'d want to know?',
-      context:null,
-      fields:['Your data gap'],
-      big:true,
+      id:'r1d', pts:0, type:'text',
+      director:"Your director asks: 'Give me the one-sentence headline — what does this data say?'",
+      q:'Write one sentence that captures the key insight across all three posts.',
+      context:'She will not read a spreadsheet. She needs the "so what" — the strategic finding a marketer pulls from the numbers.',
+      fields:[
+        {label:'Your one-sentence summary', id:'summary', type:'text', placeholder:'e.g. Post 2 reached the most new people but Post 3 had the highest engagement rate…'},
+      ]
     },
   ],
-  // Round 3 — pitch builder
   [
     {
-      id:'r3a', pts:5,
+      id:'r2a', pts:2, type:'structured',
+      director:"Your director asks: 'Which post reached the most new people — and by how much?'",
+      q:'Select the post with the highest non-follower reach and enter the exact number.',
+      context:'Use your Round 1 calculations. Your director wants the specific figure — not a percentage.',
+      fields:[
+        {label:'Best reach post', id:'bestpost', type:'select', options:['Select…','Post 1','Post 2','Post 3']},
+        {label:'Its non-follower view count', id:'bestnf', type:'number', placeholder:'e.g. 17039'},
+      ]
+    },
+    {
+      id:'r2b', pts:2, type:'structured',
+      director:"Your director asks: 'What does the format data tell us — and were zero comments a red flag?'",
+      q:'Select which format had more non-follower reach. Then decide: are zero comments on 2 posts a problem?',
+      context:'Post format (Reel vs Gallery) and engagement signals tell different stories about how content travels on Instagram.',
+      fields:[
+        {label:'Format with more reach', id:'format', type:'select', options:['Select…','Reel','Gallery']},
+        {label:'Zero comments — a problem?', id:'comments', type:'select', options:['Select…','Yes — signals low engagement','No — normal for visual content']},
+      ]
+    },
+    {
+      id:'r2c', pts:2, type:'structured',
+      director:"Your director asks: 'Which post gets the paid budget — and what format do we use next year?'",
+      q:'Select which post to boost with paid spend. Then choose the format for each post next year.',
+      context:'Boost the post that has already proven it reaches new audiences organically. For format, let the data guide the decision.',
+      fields:[
+        {label:'Boost this post', id:'boost', type:'select', options:['Select…','Post 1','Post 2','Post 3']},
+        {label:'Post 1 format next year', id:'fmt1', type:'select', options:['Select…','Reel','Gallery']},
+        {label:'Post 2 format next year', id:'fmt2', type:'select', options:['Select…','Reel','Gallery']},
+        {label:'Post 3 format next year', id:'fmt3', type:'select', options:['Select…','Reel','Gallery']},
+      ]
+    },
+    {
+      id:'r2d', pts:1, type:'structured',
+      director:"Your director asks: 'How do we prove this campaign worked next year?'",
+      q:'Select the metric you would use to measure success.',
+      context:'Choose the metric that best matches your strategy goal. Each tells a different story.',
+      fields:[
+        {label:'Success metric', id:'metric', type:'select', options:[
+          'Select…',
+          'Engagement Rate — measures content quality',
+          'Non-follower views — measures new audience reach',
+          'Follower conversion rate — measures long-term growth efficiency',
+          'Total views — measures overall reach',
+        ]},
+      ]
+    },
+  ],
+  [
+    {id:'r3a', pts:5, type:'pitch', isPitchBuilder:true,
       director:'Your agency has 2 minutes. Make them count.',
-      q:'Build your one-slide pitch deck using the builder below.',
-      context:'Structure your pitch so the data tells a story: what surprised you, what it means, what you\'d do differently, and what you still need to find out. The Presenter delivers — Analyst and Strategist keep the numbers ready.',
-      fields:null, // handled by pitch builder
-      isPitchBuilder:true,
+      q:'Build your one-slide pitch deck.',
+      context:'Your Round 1 and Round 2 answers are available for reference below. Structure your pitch: hook, insight, strategy, gap.',
     },
   ],
 ];
+
+
+const CORRECT = {
+  r1a: ['3.89%', '2.36%', '4.46%'],
+  r1b: ['1,268', '17,039', '3,499'],
+  r1c: ['0.121%', '0.061%', '0.110%', 'Post 1'],
+  r1d: ['Post 2 had the most reach (17,039 non-follower views). Post 3 had the best engagement rate (4.46%). Post 1 was most efficient at converting viewers to followers (0.121%).'],
+  r2a: ['Post 2', '17,039'],
+  r2b: ['Gallery', 'No — normal for visual content'],
+  r2c: ['Post 2', 'Any defensible format', 'Gallery (proven)', 'Any defensible format'],
+  r2d: ['Any metric except Total Views alone'],
+};
 
 // ══════════════════════════════════════════════════════
 // STATE
@@ -587,8 +623,11 @@ function loadRound(idx) {
 
   // Show prior round results in Round 2+
   if (idx >= 1) {
+    const priorWrap = document.createElement('div');
+    priorWrap.id = 'prior-results-wrap';
     const priorPanel = buildPriorResultsPanel(idx);
-    if (priorPanel) body.appendChild(priorPanel);
+    if (priorPanel) priorWrap.appendChild(priorPanel);
+    body.appendChild(priorWrap);
   }
 
   // Tasks
@@ -663,24 +702,32 @@ function buildTaskCard(task) {
   h += `</div>`;
   let b = `<div class="task-body">`;
   if (task.context) b += `<div class="context-box">${task.context}</div>`;
-  // Formula intentionally not shown — instructor teaches metrics verbally
   b += `<div class="ans-area">`;
-  (task.fields||[]).forEach((lbl,i) => {
-    const long = task.big || ['?','insight','summary','reason','gap','not','problem','Hook','Insight','Strategy','Gap'].some(k=>lbl.includes(k));
+  (task.fields||[]).forEach((field, i) => {
+    const lbl = typeof field === 'string' ? field : field.label;
+    const fid = typeof field === 'string' ? `a-${task.id}-${i}` : `a-${task.id}-${field.id}`;
+    const ftype = typeof field === 'object' ? field.type : 'text';
     b += `<div class="ans-row"><span class="ans-label">${lbl}</span>`;
-    b += long ? `<textarea class="ans-input" id="a-${task.id}-${i}" rows="2" placeholder="Your answer…"></textarea>`
-              : `<input class="ans-input" id="a-${task.id}-${i}" placeholder="…" />`;
+    if (ftype === 'select') {
+      const opts = (field.options||[]).map(o => `<option>${o}</option>`).join('');
+      b += `<select class="ans-input" id="${fid}" style="flex:1;">${opts}</select>`;
+    } else if (ftype === 'number') {
+      b += `<input class="ans-input" type="number" id="${fid}" placeholder="${field.placeholder||'…'}" step="any" />`;
+    } else {
+      b += `<input class="ans-input" id="${fid}" placeholder="${field.placeholder||'…'}" />`;
+    }
     b += `</div>`;
   });
   b += `</div>`;
-  if (task.pts) {
-    b += `<button class="sub-btn" id="sub-${task.id}" onclick="submitTask('${task.id}',${task.pts})">Submit to instructor</button>`;
-    b += `<div class="sub-status" id="sts-${task.id}" style="display:none;"><span class="sub-dot"></span><span>Submitted — your instructor will confirm the score</span></div>`;
+  if (task.pts !== undefined) {
+    b += `<button class="sub-btn" id="sub-${task.id}" onclick="submitTask('${task.id}',${task.pts})">Submit</button>`;
+    b += `<div class="sub-status" id="sts-${task.id}" style="display:none;"><span class="sub-dot"></span><span id="sts-txt-${task.id}">Submitted ✓</span></div>`;
   }
   b += `</div>`;
   card.innerHTML = h+b;
   return card;
 }
+
 
 // ══════════════════════════════════════════════════════
 // PITCH DECK BUILDER
@@ -798,15 +845,31 @@ async function submitPitch() {
 // SUBMIT
 // ══════════════════════════════════════════════════════
 async function submitTask(taskId, maxPts) {
+  // Collect answers — try both old numeric index and new named field ids
   const answers = [];
-  let i = 0;
-  while (document.getElementById(`a-${taskId}-${i}`)) {
-    answers.push(document.getElementById(`a-${taskId}-${i}`).value.trim());
-    i++;
+  const task = TASKS.flat().find(t => t.id === taskId);
+  if (task && task.fields) {
+    task.fields.forEach((field, i) => {
+      const fid = typeof field === 'string' ? `a-${taskId}-${i}` : `a-${taskId}-${field.id}`;
+      const el = document.getElementById(fid);
+      answers.push(el ? el.value.trim() : '');
+    });
+  } else {
+    let i = 0;
+    while (document.getElementById(`a-${taskId}-${i}`)) {
+      answers.push(document.getElementById(`a-${taskId}-${i}`).value.trim());
+      i++;
+    }
   }
   if (answers.every(a=>!a)) { toast('Fill in at least one answer first','err'); return; }
   // Save answers for reference in later rounds
   submittedAnswers[taskId] = answers;
+  // Update prior results panel if visible
+  const priorEl = document.getElementById('prior-results-wrap');
+  if (priorEl) {
+    const newPanel = buildPriorResultsPanel(currentRound);
+    if (newPanel) { priorEl.innerHTML = ''; priorEl.appendChild(newPanel); }
+  }
   const btn = document.getElementById('sub-'+taskId);
   btn.disabled = true; btn.textContent = 'Submitting…';
   await sendToSheet({
@@ -816,63 +879,110 @@ async function submitTask(taskId, maxPts) {
   btn.textContent = '✓ Submitted';
   const sts = document.getElementById('sts-'+taskId);
   if (sts) sts.style.display = 'flex';
+  // Show correct answers
+  showCorrectAnswers(taskId, task);
   toast('Submitted!','ok');
+}
+
+function showCorrectAnswers(taskId, task) {
+  const correct = CORRECT[taskId];
+  if (!correct || !task) return;
+  const card = document.getElementById('task-'+taskId);
+  if (!card) return;
+  // Remove existing answer reveal
+  const existing = card.querySelector('.answer-reveal');
+  if (existing) existing.remove();
+  const reveal = document.createElement('div');
+  reveal.className = 'answer-reveal';
+  reveal.style.cssText = 'margin-top:.6rem;background:#F0FFF4;border:1px solid #86EFAC;border-radius:6px;padding:.65rem .85rem;font-size:.82rem;';
+  let html = '<div style="font-weight:700;color:#166534;margin-bottom:.35rem;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;">✓ Correct Answers</div>';
+  (task.fields||[]).forEach((field, i) => {
+    const lbl = typeof field === 'string' ? field : field.label;
+    const ans = correct[i] || '';
+    if (ans) html += `<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid #BBF7D0;"><span style="color:#555;">${lbl}</span><strong style="color:#166534;">${ans}</strong></div>`;
+  });
+  reveal.innerHTML = html;
+  card.appendChild(reveal);
 }
 
 // ══════════════════════════════════════════════════════
 // PRIOR RESULTS PANEL
 // ══════════════════════════════════════════════════════
 function buildPriorResultsPanel(roundIdx) {
-  // Collect all submitted answers from previous round tasks
-  const r1tasks = ['r1a','r1b','r1c','r1d'];
-  const hasR1 = r1tasks.some(id => submittedAnswers[id]);
-  if (roundIdx === 1 && !hasR1) return null;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'data-panel';
-
-  if (roundIdx === 1 && hasR1) {
-    // Show Round 1 calculated values
-    const labels = {
-      r1a: ['Post 1 ER','Post 2 ER','Post 3 ER'],
-      r1b: ['Post 1 non-follower views','Post 2 non-follower views','Post 3 non-follower views'],
-      r1c: ['Post 1 conversion','Post 2 conversion','Post 3 conversion','Most efficient'],
-      r1d: ['Summary'],
+  // Build a locked read-only view of all prior submissions
+  const priorRounds = [];
+  
+  if (roundIdx >= 1) {
+    // Show Round 1 results
+    const r1labels = {
+      r1a: [['Post 1 ER','p1er'],['Post 2 ER','p2er'],['Post 3 ER','p3er']],
+      r1b: [['Post 1 non-follower views','p1nf'],['Post 2 non-follower views','p2nf'],['Post 3 non-follower views','p3nf']],
+      r1c: [['Post 1 conversion','p1cr'],['Post 2 conversion','p2cr'],['Post 3 conversion','p3cr'],['Most efficient','winner']],
+      r1d: [['Summary','summary']],
     };
-    let rows = '';
-    r1tasks.forEach(id => {
+    let r1rows = '';
+    Object.entries(r1labels).forEach(([id, fields]) => {
       const answers = submittedAnswers[id];
       if (!answers) return;
-      (labels[id]||[]).forEach((lbl, i) => {
+      fields.forEach(([lbl, fid], i) => {
         const val = answers[i] || '—';
-        if (val && val !== '—') {
-          rows += `<tr><td>${lbl}</td><td style="font-weight:600;color:var(--green);">${val}</td></tr>`;
+        if (val && val !== '—' && val !== 'Select…') {
+          r1rows += `<tr><td>${lbl}</td><td style="font-weight:600;color:var(--green);">${val}</td></tr>`;
         }
       });
     });
-    if (!rows) return null;
-    wrap.innerHTML = `
-      <div class="dp-head" onclick="toggleDP(this)">
-        <span>📋 Your Round 1 Results</span>
+    if (r1rows) priorRounds.push({title:'📋 Your Round 1 Results', rows:r1rows});
+  }
+
+  if (roundIdx >= 2) {
+    // Show Round 2 results
+    const r2labels = {
+      r2a: [['Best reach post','bestpost'],['Non-follower views','bestnf']],
+      r2b: [['Format with more reach','format'],['Zero comments — problem?','comments']],
+      r2c: [['Post to boost','boost'],['Post 1 format next year','fmt1'],['Post 2 format next year','fmt2'],['Post 3 format next year','fmt3']],
+      r2d: [['Success metric','metric']],
+    };
+    let r2rows = '';
+    Object.entries(r2labels).forEach(([id, fields]) => {
+      const answers = submittedAnswers[id];
+      if (!answers) return;
+      fields.forEach(([lbl], i) => {
+        const val = answers[i] || '—';
+        if (val && val !== '—' && val !== 'Select…') {
+          r2rows += `<tr><td>${lbl}</td><td style="font-weight:600;color:var(--teal);">${val}</td></tr>`;
+        }
+      });
+    });
+    if (r2rows) priorRounds.push({title:'📋 Your Round 2 Analysis', rows:r2rows});
+  }
+
+  if (!priorRounds.length) return null;
+
+  const wrap = document.createElement('div');
+  priorRounds.forEach(({title, rows}) => {
+    const panel = document.createElement('div');
+    panel.className = 'data-panel';
+    panel.style.marginBottom = '.5rem';
+    panel.innerHTML = `
+      <div class="dp-head">
+        <span>${title}</span>
         <span class="dp-chev open">▲</span>
       </div>
-      <div class="dp-body" id="dpbody2">
+      <div class="dp-body">
         <table class="dtable">
-          <thead><tr><th style="text-align:left;">Metric</th><th style="text-align:left;">Your Answer</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>`;
-    // Fix toggle to use unique id
-    wrap.querySelector('.dp-head').onclick = function() {
-      const body = wrap.querySelector('.dp-body');
+    panel.querySelector('.dp-head').onclick = function() {
+      const body = this.nextElementSibling;
       const ch = this.querySelector('.dp-chev');
       const open = ch.classList.contains('open');
       body.style.display = open ? 'none' : 'block';
       ch.classList.toggle('open', !open);
       ch.textContent = open ? '▼' : '▲';
     };
-  }
-
+    wrap.appendChild(panel);
+  });
   return wrap;
 }
 
