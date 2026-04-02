@@ -960,9 +960,15 @@ function showCorrectAnswers(taskId, task, studentAnswers) {
         // These have multiple valid answers — just check they picked something
         isCorrect = sv && sv !== 'select…' && sv.length > 1;
       } else {
-        // Check if student answer contains the key word of the correct answer
-        isCorrect = sv.includes(ca.split(' ')[0].replace(/[^a-z0-9]/g,'')) ||
-                    ca.includes(sv.split(' ')[0].replace(/[^a-z0-9]/g,''));
+        // Compare answers — check if the LAST significant word matches (e.g. "post 1" vs "post 3")
+        const svWords = sv.replace(/[^a-z0-9\s]/g,'').trim().split(/\s+/);
+        const caWords = ca.replace(/[^a-z0-9\s]/g,'').trim().split(/\s+/);
+        const svKey = svWords[svWords.length-1]; // last word: "1", "2", "gallery", "no"
+        const caKey = caWords[caWords.length-1];
+        // Also try first word match for single-word answers like "gallery", "no", "yes"
+        const svFirst = svWords[0];
+        const caFirst = caWords[0];
+        isCorrect = (svKey === caKey) || (svFirst === caFirst && caWords.length === 1);
       }
     } else {
       const num = parseFloat((studentVal||'').replace(/[%,\s]/g,''));
