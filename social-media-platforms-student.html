@@ -335,9 +335,9 @@ const TASKS = [
       q:'Calculate the Engagement Rate for all 3 posts.',
       context:"Engagement Rate shows how many people responded to what they saw. It is the fairness metric when post sizes vary. Apply the metric your instructor taught you.",
       fields:[
-        {label:'Post 1 ER (%)', id:'p1er', type:'number', placeholder:'e.g. 3.89'},
-        {label:'Post 2 ER (%)', id:'p2er', type:'number', placeholder:'e.g. 2.36'},
-        {label:'Post 3 ER (%)', id:'p3er', type:'number', placeholder:'e.g. 4.46'},
+        {label:'Post 1 ER (%)', id:'p1er', type:'number', placeholder:'Enter %'},
+        {label:'Post 2 ER (%)', id:'p2er', type:'number', placeholder:'Enter %'},
+        {label:'Post 3 ER (%)', id:'p3er', type:'number', placeholder:'Enter %'},
       ]
     },
     {
@@ -346,9 +346,9 @@ const TASKS = [
       q:'Calculate the actual non-follower view count for each post.',
       context:'The percentages in the data show the split — but your director wants the raw number. 57% of 300 is very different from 57% of 30,000.',
       fields:[
-        {label:'Post 1 non-follower views', id:'p1nf', type:'number', placeholder:'e.g. 1268'},
-        {label:'Post 2 non-follower views', id:'p2nf', type:'number', placeholder:'e.g. 17039'},
-        {label:'Post 3 non-follower views', id:'p3nf', type:'number', placeholder:'e.g. 3499'},
+        {label:'Post 1 non-follower views', id:'p1nf', type:'number', placeholder:'Enter number'},
+        {label:'Post 2 non-follower views', id:'p2nf', type:'number', placeholder:'Enter number'},
+        {label:'Post 3 non-follower views', id:'p3nf', type:'number', placeholder:'Enter number'},
       ]
     },
     {
@@ -357,9 +357,9 @@ const TASKS = [
       q:'Calculate the follower conversion rate for each post, then select the most efficient.',
       context:'Volume is not efficiency. A post that earned 8 followers from 6,000 views may be doing more strategic work than one that earned 18 from 30,000.',
       fields:[
-        {label:'Post 1 conversion (%)', id:'p1cr', type:'number', placeholder:'e.g. 0.121'},
-        {label:'Post 2 conversion (%)', id:'p2cr', type:'number', placeholder:'e.g. 0.061'},
-        {label:'Post 3 conversion (%)', id:'p3cr', type:'number', placeholder:'e.g. 0.110'},
+        {label:'Post 1 conversion (%)', id:'p1cr', type:'number', placeholder:'Enter %'},
+        {label:'Post 2 conversion (%)', id:'p2cr', type:'number', placeholder:'Enter %'},
+        {label:'Post 3 conversion (%)', id:'p3cr', type:'number', placeholder:'Enter %'},
         {label:'Most efficient post', id:'winner', type:'select', options:['Select…','Post 1','Post 2','Post 3']},
       ]
     },
@@ -381,7 +381,7 @@ const TASKS = [
       context:'Use your Round 1 calculations. Your director wants the specific figure — not a percentage.',
       fields:[
         {label:'Best reach post', id:'bestpost', type:'select', options:['Select…','Post 1','Post 2','Post 3']},
-        {label:'Its non-follower view count', id:'bestnf', type:'number', placeholder:'e.g. 17039'},
+        {label:'Its non-follower view count', id:'bestnf', type:'number', placeholder:'Enter number'},
       ]
     },
     {
@@ -626,13 +626,32 @@ function loadRound(idx) {
     const priorWrap = document.createElement('div');
     priorWrap.id = 'prior-results-wrap';
     const priorPanel = buildPriorResultsPanel(idx);
-    if (priorPanel) priorWrap.appendChild(priorPanel);
+    if (priorPanel) {
+      priorWrap.appendChild(priorPanel);
+    } else {
+      priorWrap.innerHTML = '<div style="background:var(--light);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;font-size:.82rem;color:var(--muted);">Submit your previous round answers to see them here for reference.</div>';
+    }
     body.appendChild(priorWrap);
   }
 
   // Tasks
   TASKS[idx].forEach(task => {
     if (task.isPitchBuilder) {
+      // Show task framing card before pitch builder
+      const frameCard = document.createElement('div');
+      frameCard.className = 'task-card';
+      frameCard.innerHTML = `
+        <div class="task-head">
+          <div style="flex:1;">
+            <div class="task-director">${task.director||''}</div>
+            <div class="task-q">${task.q}</div>
+          </div>
+          ${task.pts ? `<span class="pts-badge">${task.pts} pts</span>` : ''}
+        </div>
+        <div class="task-body">
+          <div class="context-box">${task.context||''}</div>
+        </div>`;
+      body.appendChild(frameCard);
       body.appendChild(buildPitchBuilder());
     } else {
       body.appendChild(buildTaskCard(task));
@@ -895,11 +914,11 @@ function showCorrectAnswers(taskId, task) {
   const reveal = document.createElement('div');
   reveal.className = 'answer-reveal';
   reveal.style.cssText = 'margin-top:.6rem;background:#F0FFF4;border:1px solid #86EFAC;border-radius:6px;padding:.65rem .85rem;font-size:.82rem;';
-  let html = '<div style="font-weight:700;color:#166534;margin-bottom:.35rem;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;">✓ Correct Answers</div>';
+  let html = '<div style="font-weight:700;color:#166534;margin-bottom:.35rem;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;">Reference Answers</div>';
   (task.fields||[]).forEach((field, i) => {
     const lbl = typeof field === 'string' ? field : field.label;
     const ans = correct[i] || '';
-    if (ans) html += `<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid #BBF7D0;"><span style="color:#555;">${lbl}</span><strong style="color:#166534;">${ans}</strong></div>`;
+    if (ans) html += `<div style="padding:.2rem 0;border-bottom:1px solid #BBF7D0;"><span style="color:#555;font-size:.78rem;">${lbl}: </span><strong style="color:#166534;">${ans}</strong></div>`;
   });
   reveal.innerHTML = html;
   card.appendChild(reveal);
