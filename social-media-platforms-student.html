@@ -432,15 +432,43 @@ const TASKS = [
 ];
 
 
-const CORRECT = {
-  r1a: ['3.89%', '2.36%', '4.46%'],
-  r1b: ['1,268', '17,039', '3,499'],
-  r1c: ['0.121%', '0.061%', '0.110%', 'Post 1'],
-  r1d: ['Post 2 had the most reach (17,039 non-follower views). Post 3 had the best engagement rate (4.46%). Post 1 was most efficient at converting viewers to followers (0.121%).'],
-  r2a: ['Post 2', '17,039'],
-  r2b: ['Gallery', 'No — normal for visual content'],
-  r2c: ['Post 2', 'Any defensible format', 'Gallery (proven)', 'Any defensible format'],
-  r2d: ['Any metric except Total Views alone'],
+const ANSWER_KEY = {
+  r1a: [
+    {answer:'3.89%', working:'257 ÷ 6,605 × 100 = 3.89%', tol:0.15},
+    {answer:'2.36%', working:'701 ÷ 29,684 × 100 = 2.36%', tol:0.15},
+    {answer:'4.46%', working:'323 ÷ 7,245 × 100 = 4.46%', tol:0.15},
+  ],
+  r1b: [
+    {answer:'1,268', working:'6,605 × 19.2% = 1,268 non-follower views', tol:60},
+    {answer:'17,039', working:'29,684 × 57.4% = 17,039 non-follower views', tol:100},
+    {answer:'3,499', working:'7,245 × 48.3% = 3,499 non-follower views', tol:60},
+  ],
+  r1c: [
+    {answer:'0.121%', working:'8 ÷ 6,605 × 100 = 0.121%', tol:0.008},
+    {answer:'0.061%', working:'18 ÷ 29,684 × 100 = 0.061%', tol:0.008},
+    {answer:'0.110%', working:'8 ÷ 7,245 × 100 = 0.110%', tol:0.008},
+    {answer:'Post 1', working:'Post 1 had the highest conversion rate (0.121%) — it earned 8 followers from only 6,605 views, the most efficient of the three.', tol:null},
+  ],
+  r1d: [
+    {answer:'See below', working:'Post 2 reached the most new people (17,039 non-follower views). Post 3 had the best engagement rate (4.46%). Post 1 was the most efficient at converting viewers to followers (0.121%). A good summary captures one of these tensions.', tol:null},
+  ],
+  r2a: [
+    {answer:'Post 2', working:'Post 2 had 17,039 non-follower views — far more than Post 1 (1,268) or Post 3 (3,499).', tol:null},
+    {answer:'17,039', working:'29,684 × 57.4% = 17,039 non-follower views', tol:200},
+  ],
+  r2b: [
+    {answer:'Gallery', working:'Post 2 (Gallery) had 17,039 non-follower views vs Post 1 (Reel) at 1,268 and Post 3 (Reel) at 3,499. Gallery dramatically outperformed Reels on new audience reach.', tol:null},
+    {answer:'No', working:'Zero comments is normal for visual/event content. Shares (74) and saves (9) on Post 2 show the content resonated. Comments require a call-to-action or controversy.', tol:null},
+  ],
+  r2c: [
+    {answer:'Post 2', working:'Post 2 already proved it can reach new audiences organically (17,039 non-follower views). Paid spend amplifies what already works.', tol:null},
+    {answer:'Any specific format', working:'Any format is defensible — but it should be based on the data. Post 2 was a Gallery and had the best reach, so Gallery is a strong choice for Saturday.', tol:null},
+    {answer:'Gallery recommended', working:'Post 2 (Gallery) had the best non-follower reach. Repeating the format makes strategic sense.', tol:null},
+    {answer:'Any specific format', working:'Any format is defensible for Post 3, but switching from Reel to Gallery lets you test whether format explains the lower reach vs Post 2.', tol:null},
+  ],
+  r2d: [
+    {answer:'Any except "Total views"', working:'Engagement Rate, non-follower views, or follower conversion rate are all defensible — each ties to a specific strategy goal. "Total views" alone tells you reach but not quality.', tol:null},
+  ],
 };
 
 // ══════════════════════════════════════════════════════
@@ -899,27 +927,59 @@ async function submitTask(taskId, maxPts) {
   const sts = document.getElementById('sts-'+taskId);
   if (sts) sts.style.display = 'flex';
   // Show correct answers
-  showCorrectAnswers(taskId, task);
+  showCorrectAnswers(taskId, task, answers);
   toast('Submitted!','ok');
 }
 
-function showCorrectAnswers(taskId, task) {
-  const correct = CORRECT[taskId];
-  if (!correct || !task) return;
+function showCorrectAnswers(taskId, task, studentAnswers) {
+  const key = ANSWER_KEY[taskId];
+  if (!key || !task) return;
   const card = document.getElementById('task-'+taskId);
   if (!card) return;
-  // Remove existing answer reveal
   const existing = card.querySelector('.answer-reveal');
   if (existing) existing.remove();
   const reveal = document.createElement('div');
   reveal.className = 'answer-reveal';
-  reveal.style.cssText = 'margin-top:.6rem;background:#F0FFF4;border:1px solid #86EFAC;border-radius:6px;padding:.65rem .85rem;font-size:.82rem;';
-  let html = '<div style="font-weight:700;color:#166534;margin-bottom:.35rem;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;">Reference Answers</div>';
+  reveal.style.cssText = 'margin-top:.7rem;border-radius:8px;overflow:hidden;border:1px solid var(--border);font-size:.85rem;';
+
+  let html = '';
   (task.fields||[]).forEach((field, i) => {
     const lbl = typeof field === 'string' ? field : field.label;
-    const ans = correct[i] || '';
-    if (ans) html += `<div style="padding:.2rem 0;border-bottom:1px solid #BBF7D0;"><span style="color:#555;font-size:.78rem;">${lbl}: </span><strong style="color:#166534;">${ans}</strong></div>`;
+    const k = key[i];
+    if (!k) return;
+    const studentVal = (studentAnswers && studentAnswers[i]) ? studentAnswers[i].trim() : '';
+    let isCorrect = false;
+
+    if (k.tol === null) {
+      // Select/text — check if student answered anything
+      isCorrect = studentVal && studentVal !== 'Select…' && studentVal.length > 1;
+    } else {
+      const num = parseFloat((studentVal||'').replace(/[%,\s]/g,''));
+      const correct = parseFloat((k.answer||'').replace(/[%,]/g,''));
+      isCorrect = !isNaN(num) && Math.abs(num - correct) <= k.tol;
+    }
+
+    const bg = isCorrect ? '#F0FFF4' : '#FFF5F5';
+    const borderColor = isCorrect ? '#86EFAC' : '#FCA5A5';
+    const icon = isCorrect ? '✓' : '✗';
+    const iconColor = isCorrect ? '#166534' : '#CC0000';
+
+    html += `<div style="background:${bg};border-bottom:1px solid ${borderColor};padding:.55rem .8rem;">`;
+    html += `<div style="display:flex;align-items:flex-start;gap:.5rem;margin-bottom:${isCorrect?0:'.35rem'};">`;
+    html += `<span style="font-weight:700;color:${iconColor};flex-shrink:0;font-size:1rem;">${icon}</span>`;
+    html += `<div style="flex:1;"><span style="color:var(--muted);font-size:.78rem;">${lbl}</span>`;
+    if (!isCorrect) {
+      html += `<br><span style="font-size:.78rem;color:var(--muted);">You answered: <em>${studentVal||'blank'}</em></span>`;
+    }
+    html += `</div>`;
+    html += `<strong style="color:${iconColor};flex-shrink:0;">${k.answer}</strong>`;
+    html += `</div>`;
+    if (!isCorrect || k.tol === null) {
+      html += `<div style="font-size:.78rem;color:#555;line-height:1.55;padding-left:1.5rem;margin-top:.2rem;">${k.working}</div>`;
+    }
+    html += `</div>`;
   });
+
   reveal.innerHTML = html;
   card.appendChild(reveal);
 }
